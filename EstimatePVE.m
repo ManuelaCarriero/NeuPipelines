@@ -1,21 +1,17 @@
 %Program to estimate partial volume effect in images with Partial Fourier
 %and without Partial Fourier
 
-%Insert the filename if you are in the same folder of the data.
-
-%Rsoma map to T1
-% img_path_pve1 = '/storage/shared/SANDI_240418/NIFTI/t1_mp2rage_sag_p3_iso_fast/Segmented/t1_mp2rage_UNIMaskedwithINV2_pve_1.nii.gz';
-% img_path_pve0 = '/storage/shared/SANDI_240418/NIFTI/t1_mp2rage_sag_p3_iso_fast/Segmented/t1_mp2rage_UNIMaskedwithINV2_pve_0.nii.gz';
-% img_path_pve2 = '/storage/shared/SANDI_240418/NIFTI/t1_mp2rage_sag_p3_iso_fast/Segmented/t1_mp2rage_UNIMaskedwithINV2_pve_2.nii.gz';
-% img_path_map = '/storage/shared/SANDI_240418/NIFTI/RsomawPF_to_T1.nii.gz';
-% title_plot = 'Rsoma map With Partial Fourier';
 
 %T1 to diffusion weighted image
-img_path_pve1 = '/storage/shared/SANDI_240418/NIFTI/pve1_to_DWIwPF.nii.gz';
-img_path_pve0 = '/storage/shared/SANDI_240418/NIFTI/pve0_to_DWIwPF.nii.gz';
-img_path_pve2 = '/storage/shared/SANDI_240418/NIFTI/pve2_to_DWIwPF.nii.gz';
-img_path_map_woPF = '/storage/shared/SANDI_240229_MatlabToolbox/SANDI-Matlab-Toolbox-Latest-Release-main/dataset240418tr3000woPF/SANDI_MainFolder/derivatives/SANDI_analysis/sub-01/ses-01/SANDI_Output/SANDI-fit_Rsoma.nii.gz';
+img_path_pve1_wPF = '/storage/shared/SANDI_240418/NIFTI/pve1_to_DWIwPF.nii.gz';
+img_path_pve0_wPF = '/storage/shared/SANDI_240418/NIFTI/pve0_to_DWIwPF.nii.gz';
+img_path_pve2_wPF = '/storage/shared/SANDI_240418/NIFTI/pve2_to_DWIwPF.nii.gz';
 img_path_map_wPF = '/storage/shared/SANDI_240229_MatlabToolbox/SANDI-Matlab-Toolbox-Latest-Release-main/dataset240418tr3000wPF/SANDI_MainFolder/derivatives/SANDI_analysis/sub-01/ses-01/SANDI_Output/SANDI-fit_Rsoma.nii.gz';
+
+img_path_pve1_woPF = '/storage/shared/SANDI_240418/NIFTI/pve1_to_DWIwoPF.nii.gz';
+img_path_pve0_woPF = '/storage/shared/SANDI_240418/NIFTI/pve0_to_DWIwoPF.nii.gz';
+img_path_pve2_woPF = '/storage/shared/SANDI_240418/NIFTI/pve2_to_DWIwoPF.nii.gz';
+img_path_map_woPF = '/storage/shared/SANDI_240229_MatlabToolbox/SANDI-Matlab-Toolbox-Latest-Release-main/dataset240418tr3000woPF/SANDI_MainFolder/derivatives/SANDI_analysis/sub-01/ses-01/SANDI_Output/SANDI-fit_Rsoma.nii.gz';
 
 %img_path_map = '/storage/shared/SANDI_240229_MatlabToolbox/SANDI-Matlab-Toolbox-Latest-Release-main/dataset240418tr3000wPF/SANDI_MainFolder/derivatives/SANDI_analysis/sub-01/ses-01/SANDI_Output/SANDI-fit_fsoma.nii.gz';
 title_plot = 'Rsoma map with and without Partial Fourier';
@@ -31,12 +27,19 @@ V_maps = {V_map_woPF V_map_wPF};
 
 thr_pve = 0.1:0.1:0.9;
 
-Vhdr_pve1 = spm_vol(img_path_pve1);
-pve1 = spm_read_vols(Vhdr_pve1);
-Vhdr_pve0 = spm_vol(img_path_pve0);
-pve0 = spm_read_vols(Vhdr_pve0);
-Vhdr_pve2 = spm_vol(img_path_pve2);
-pve2 = spm_read_vols(Vhdr_pve2);
+Vhdr_pve1_wPF = spm_vol(img_path_pve1_wPF);
+pve1_wPF = spm_read_vols(Vhdr_pve1_wPF);
+Vhdr_pve0_wPF = spm_vol(img_path_pve0_wPF);
+pve0_wPF = spm_read_vols(Vhdr_pve0_wPF);
+Vhdr_pve2_wPF = spm_vol(img_path_pve2_wPF);
+pve2_wPF = spm_read_vols(Vhdr_pve2_wPF);
+
+Vhdr_pve1_woPF = spm_vol(img_path_pve1_woPF);
+pve1_woPF = spm_read_vols(Vhdr_pve1_woPF);
+Vhdr_pve0_woPF = spm_vol(img_path_pve0_woPF);
+pve0_woPF = spm_read_vols(Vhdr_pve0_woPF);
+Vhdr_pve2_woPF = spm_vol(img_path_pve2_woPF);
+pve2_woPF = spm_read_vols(Vhdr_pve2_woPF);
 
 Quantiles_list_wPF = [];
 Quantiles_list_woPF = [];
@@ -54,7 +57,16 @@ for element = 1:numel(V_maps)
     
     
         %
-    
+        if element == 1
+            pve0 = pve0_woPF;
+            pve1 = pve1_woPF;
+            pve2 = pve2_woPF;
+        else
+            pve0 = pve0_wPF;
+            pve1 = pve1_wPF;
+            pve2 = pve2_wPF;
+        end
+
     
         %figure,imagesc(V_pve(:,:,150))
     
@@ -179,14 +191,7 @@ for element = 1:numel(V_maps)
     end
 end
 
-figure, plot(thr_pve, mean_par);
-%hold on
-%plot(thr_pve, mean_par_wo);
-xlabel('Threashold value');
-%ylabel(y_label);
-ylabel(y_label);
-title(title_plot);
-ylim([10 13.5]);
+
 
 
 
@@ -195,27 +200,33 @@ ylim([10 13.5]);
 %media diventa il nuovo campione quindi occorre comunque dividere 
 %per il numero di campioni.
 
+mean_par = {mean_par_wPF mean_par_woPF};
+CI_list = {CI_list_wPF CI_list_woPF};
+title_plots = {'Rsoma map with Partial Fourier' 'Rsoma map without Partial Fourier'};
+
+for index = 1:1:numel(mean_par)
+
+    figure,
+    p1 = errorbar(thr_pve, mean_par{index}(:,1), mean_par{index}(:,1)-CI_list{index}(:,1), CI_list{index}(:,2)-mean_par{index}(:,1));
+    hold on
+    p2 = errorbar(thr_pve, mean_par{index}(:,2), mean_par{index}(:,2)-CI_list{index}(:,3), CI_list{index}(:,4)-mean_par{index}(:,2));
+    hold on
+    p3 = errorbar(thr_pve, mean_par{index}(:,3), mean_par{index}(:,3)-CI_list{index}(:,5), CI_list{index}(:,6)-mean_par{index}(:,3));
+    p1.LineStyle = '-';
+    p1.Marker = '.';
+    p2.LineStyle = '-';
+    p2.Marker = '.';
+    p3.LineStyle = '-';
+    p3.Marker = '.';
+    ylim([10 13.5]);
+    legend([p1 p2 p3],{'Grey Matter', 'White Matter', 'CSF'});
+    xlabel('Threashold value');
+    ylabel(y_label);
+    title(title_plots{index});
+
+end
 
 
-
-
-figure, 
-p1 = errorbar(thr_pve, mean_par_wPF(:,1), mean_par_wPF(:,1)-CI_list_wPF(:,1), CI_list_wPF(:,2)-mean_par_wPF(:,1));
-hold on
-p2 = errorbar(thr_pve, mean_par_wPF(:,2), mean_par_wPF(:,2)-CI_list_wPF(:,3), CI_list_wPF(:,4)-mean_par_wPF(:,2));
-hold on
-p3 = errorbar(thr_pve, mean_par_wPF(:,3), mean_par_wPF(:,3)-CI_list_wPF(:,5), CI_list_wPF(:,6)-mean_par_wPF(:,3));
-p1.LineStyle = '-';
-p1.Marker = '.';
-p2.LineStyle = '-';
-p2.Marker = '.';
-p3.LineStyle = '-';
-p3.Marker = '.';
-ylim([10 13.5]);
-legend([p1 p2 p3],{'Grey Matter', 'White Matter', 'CSF'});
-xlabel('Threashold value');
-ylabel(y_label);
-title(title_plot);
 
 %GM with and without Partial Fourier
 figure, 
@@ -241,43 +252,7 @@ figure,
 hist(CI_list_woPF(:,2)-CI_list_woPF(:,1));
 title('GM distribution of confidence interval without PF');
 
-% figure, 
-% h1 = hist(CI_list_wPF(:,2)-CI_list_wPF(:,1));
-% hold on
-% h2 = hist(CI_list_woPF(:,2)-CI_list_woPF(:,1));
-% h1.Normalization = 'probability';
-% h1.BinWidth = 0.25;
-% h2.Normalization = 'probability';
-% h2.BinWidth = 0.25;
-% 
-% h1 = 0.05 * randn(1, 10000);
-% h2 = 0.10 * randn(1, 10000);
-% h3 = 0.30 * randn(1, 10000);
-% [counts1, binCenters1] = hist(h1, 500);
-% [counts2, binCenters2] = hist(h2, 500);
-% [counts3, binCenters3] = hist(h3, 500);
-% figure,
-% plot(binCenters1, counts1, 'r-');
-% hold on;
-% plot(binCenters2, counts2, 'g-');
-% plot(binCenters3, counts3, 'b-');
-% grid on;
-% % Put up legend.
-% legend1 = sprintf('mu = %.3f', mean(h1));
-% legend2 = sprintf('mu = %.3f', mean(h2));
-% legend3 = sprintf('mu = %.3f', mean(h3));
-% legend({legend1, legend2, legend3});
-% 
-% [counts1, binCenters1] = hist(CI_list_wPF(:,2)-CI_list_wPF(:,1));
-% [counts2, binCenters2] = hist(CI_list_woPF(:,2)-CI_list_woPF(:,1));
-% figure,
-% plot(binCenters1, counts1, 'r-');
-% hold on;
-% plot(binCenters2, counts2, 'g-');
-% % Put up legend.
-% legend1 = sprintf('mu = %.3f', mean(h1));
-% legend2 = sprintf('mu = %.3f', mean(h2));
-% legend({legend1, legend2});
+
 
 
 %WM with and without Partial Fourier
@@ -333,29 +308,29 @@ title(title_plot);
 
 %% Figure with quantiles as errorbars
 
-figure, 
-p1 = errorbar(thr_pve, Quantiles_list_wPF(:,2), Quantiles_list_wPF(:,2) - Quantiles_list_wPF(:,1), Quantiles_list_wPF(:,2) - Quantiles_list_wPF(:,3));
-hold on
-p2 = errorbar(thr_pve, Quantiles_list_wPF(:,5), Quantiles_list_wPF(:,5) - Quantiles_list_wPF(:,4), Quantiles_list_wPF(:,6) - Quantiles_list_wPF(:,5));
-hold on
-p3 = errorbar(thr_pve, Quantiles_list_wPF(:,8), Quantiles_list_wPF(:,8) - Quantiles_list_wPF(:,7), Quantiles_list_wPF(:,9) - Quantiles_list_wPF(:,8));
-p1.LineStyle = '-';
-p1.Marker = '.';
-p2.LineStyle = '-';
-p2.Marker = '.';
-p3.LineStyle = '-';
-p3.Marker = '.';
-ylim([0 15]);
-ylim([10 13.5]);
-legend([p1 p2 p3],{'Grey Matter', 'White Matter', 'CSF'});
-xlabel('Threashold value');
-ylabel(y_label);
-title(title_plot);
+% figure, 
+% p1 = errorbar(thr_pve, Quantiles_list_wPF(:,2), Quantiles_list_wPF(:,2) - Quantiles_list_wPF(:,1), Quantiles_list_wPF(:,2) - Quantiles_list_wPF(:,3));
+% hold on
+% p2 = errorbar(thr_pve, Quantiles_list_wPF(:,5), Quantiles_list_wPF(:,5) - Quantiles_list_wPF(:,4), Quantiles_list_wPF(:,6) - Quantiles_list_wPF(:,5));
+% hold on
+% p3 = errorbar(thr_pve, Quantiles_list_wPF(:,8), Quantiles_list_wPF(:,8) - Quantiles_list_wPF(:,7), Quantiles_list_wPF(:,9) - Quantiles_list_wPF(:,8));
+% p1.LineStyle = '-';
+% p1.Marker = '.';
+% p2.LineStyle = '-';
+% p2.Marker = '.';
+% p3.LineStyle = '-';
+% p3.Marker = '.';
+% ylim([0 15]);
+% ylim([10 13.5]);
+% legend([p1 p2 p3],{'Grey Matter', 'White Matter', 'CSF'});
+% xlabel('Threashold value');
+% ylabel(y_label);
+% title(title_plot);
 
 
 
 %cambia tipo di interpolazione come suggerito da Davide.
 
 %% Slope
-deltayslope_woPF = mean_par(7,1) - mean_par(1,1); 0.9128
-deltayslope_wPF = mean_par(7,1) - mean_par(1,1); %0.8684
+deltayslope_woPF = mean_par_woPF(7,1) - mean_par_woPF(1,1); 0.9128
+deltayslope_wPF = mean_par_wPF(7,1) - mean_par_wPF(1,1); %0.8684
