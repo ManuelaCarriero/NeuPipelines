@@ -243,16 +243,6 @@ ylabel(y_label);
 ylim([10 13.5])
 title(title_plot);
 
-%distribution error with and without Partial Fourier
-figure, 
-hist(CI_list_wPF(:,2)-CI_list_wPF(:,1));
-title('GM distribution of confidence interval with PF');
-
-figure,
-hist(CI_list_woPF(:,2)-CI_list_woPF(:,1));
-title('GM distribution of confidence interval without PF');
-
-
 
 
 %WM with and without Partial Fourier
@@ -284,6 +274,15 @@ xlabel('Threashold value');
 ylabel(y_label);
 ylim([10 13.5])
 title(title_plot);
+
+%distribution error with and without Partial Fourier
+figure, 
+hist(CI_list_wPF(:,2)-CI_list_wPF(:,1));
+title('Confidence intervals GM distribution with PF');
+
+figure,
+hist(CI_list_woPF(:,2)-CI_list_woPF(:,1));
+title('Confidence intervals GM distribution without PF');
 
 %% Figure with SEM as errorbars
 % figure, 
