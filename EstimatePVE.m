@@ -21,7 +21,7 @@ img_path_pve2_woPF = '/media/nas_rete/Work_manuela/PVE240523/pve2_to_b0.nii.gz';
 img_path_map_woPF = '/storage/shared/SANDI_240229_MatlabToolbox/SANDI-Matlab-Toolbox-Latest-Release-main/dataset240523/SANDI_MainFolder/derivatives/SANDI_analysis/sub-01/ses-01/SANDI_Output/SANDI-fit_Rsoma.nii.gz';
 %img_path_map_woPF = '/storage/shared/SANDI_240229_MatlabToolbox/SANDI-Matlab-Toolbox-Latest-Release-main/dataset240523/SANDI_MainFolder/derivatives/SANDI_analysis/sub-01/ses-01/SANDI_Output/SANDI-fit_fsoma.nii.gz';
 
-title_plot = 'Rsoma map without Partial Fourier Acq240523';
+title_plot = 'Rsoma Partial Volume Effect (fsoma threashold=0.1)';
 y_label = 'Mean value of Rsoma';
 
 Vhdr_map_woPF = spm_vol(img_path_map_woPF);
@@ -57,7 +57,7 @@ V_mapfsoma = spm_read_vols(Vhdr_map);
 %figure, imagesc(V_map(:,:,40));
 % figure, histogram(V_map);
 
-V_mapfsoma=V_mapfsoma>0.4;
+V_mapfsoma=V_mapfsoma>0.1;
 %deep grey matter putamen region
 % figure, imagesc(V_mapfsoma(:,:,40));
 
@@ -115,11 +115,11 @@ for element = 1:numel(V_maps)
         Vmean(2) = mean(V_WM);
         Vmean(3) = mean(V_CSF);
 
-%         if element == 1
-%             mean_par_woPF(end+1,:) = Vmean;
-%         else
-%             mean_par_wPF(end+1,:) = Vmean;
-%         end
+        if element == 1
+            mean_par_woPF(end+1,:) = Vmean;
+        else
+            mean_par_wPF(end+1,:) = Vmean;
+        end
 
         % Confidence Intervals using bootstrapping
         V_GM = bootstrp(100,@mean,V_GM);
@@ -140,11 +140,11 @@ for element = 1:numel(V_maps)
     err_WM(value,1) = SEM_WM;
     err_CSF(value,1) = SEM_CSF;
 
-        if element == 1
-            err_list_woPF(end+1,:) = CI;
-        else 
-            err_list_wPF(end+1,:) = CI;
-        end 
+%         if element == 1
+%             err_list_woPF(end+1,:) = CI;
+%         else 
+%             err_list_wPF(end+1,:) = CI;
+%         end 
         
          %Check for distribution
     %      figure,
