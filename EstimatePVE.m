@@ -1,27 +1,14 @@
 %Program to estimate partial volume effect in images with Partial Fourier
 %and without Partial Fourier
 
-% img_path_pve1_woPF = '/storage/shared/SANDI_240418/NIFTI/pve1_to_DWIwoPF.nii.gz';
-% img_path_pve0_woPF = '/storage/shared/SANDI_240418/NIFTI/pve0_to_DWIwoPF.nii.gz';
-% img_path_pve2_woPF = '/storage/shared/SANDI_240418/NIFTI/pve2_to_DWIwoPF.nii.gz';
-% img_path_map_woPF = '/storage/shared/SANDI_240229_MatlabToolbox/SANDI-Matlab-Toolbox-Latest-Release-main/dataset240418tr3000woPF/SANDI_MainFolder/derivatives/SANDI_analysis/sub-01/ses-01/SANDI_Output/SANDI-fit_Rsoma.nii.gz';
-% title_plot = 'Rsoma map without Partial Fourier Acq240418';
+img_path_pve0_woPF = '/media/nas_rete/Work_manuela/SANDI_PVE/sub-04/pve0_to_b0.nii.gz';
+img_path_pve1_woPF = '/media/nas_rete/Work_manuela/SANDI_PVE/sub-04/pve1_to_b0.nii.gz';
+img_path_pve2_woPF = '/media/nas_rete/Work_manuela/SANDI_PVE/sub-04/pve2_to_b0.nii.gz';
 
-% img_path_pve1_woPF = '/media/nas_rete/Work_manuela/DICOM_PRIN2022Antonello/NIFTI/SANDI_analysis/InterpNN_pve1_to_b0.nii.gz';
-% img_path_pve0_woPF = '/media/nas_rete/Work_manuela/DICOM_PRIN2022Antonello/NIFTI/SANDI_analysis/InterpNN_pve0_to_b0.nii.gz';
-% img_path_pve2_woPF = '/media/nas_rete/Work_manuela/DICOM_PRIN2022Antonello/NIFTI/SANDI_analysis/InterpNN_pve2_to_b0.nii.gz';
-% img_path_map_woPF = '/storage/shared/SANDI_240229_MatlabToolbox/SANDI-Matlab-Toolbox-Latest-Release-main/dataset240516/SANDI_MainFolder/derivatives/SANDI_analysis/sub-01/ses-01/SANDI_Output/SANDI-fit_Rsoma.nii.gz';
-% title_plot = 'Rsoma map without Partial Fourier Acq240516';
-
-
-img_path_pve1_woPF = '/media/nas_rete/Work_manuela/PVE240523/pve1_to_b0.nii.gz';
-img_path_pve0_woPF = '/media/nas_rete/Work_manuela/PVE240523/pve0_to_b0.nii.gz';
-img_path_pve2_woPF = '/media/nas_rete/Work_manuela/PVE240523/pve2_to_b0.nii.gz';
-
-img_path_map_woPF = '/storage/shared/SANDI_240229_MatlabToolbox/SANDI-Matlab-Toolbox-Latest-Release-main/dataset240523/SANDI_MainFolder/derivatives/SANDI_analysis/sub-01/ses-01/SANDI_Output/SANDI-fit_Rsoma.nii.gz';
+img_path_map_woPF = '/storage/shared/PRINAntonello2022/BIDS/derivatives/sub-04/dwi/SANDI_MainFolder/derivatives/SANDI_analysis/sub-04/ses-01/SANDI_Output/SANDI-fit_Rsoma.nii.gz';
 %img_path_map_woPF = '/storage/shared/SANDI_240229_MatlabToolbox/SANDI-Matlab-Toolbox-Latest-Release-main/dataset240523/SANDI_MainFolder/derivatives/SANDI_analysis/sub-01/ses-01/SANDI_Output/SANDI-fit_fsoma.nii.gz';
 
-title_plot = 'Rsoma Partial Volume Effect (fsoma threashold=0.1)';
+title_plot = 'Rsoma Partial Volume Effect (fsoma threashold=0.4) sub-04';
 y_label = 'Mean value of Rsoma';
 
 Vhdr_map_woPF = spm_vol(img_path_map_woPF);
@@ -41,6 +28,13 @@ pve0_woPF = spm_read_vols(Vhdr_pve0_woPF);
 Vhdr_pve2_woPF = spm_vol(img_path_pve2_woPF);
 pve2_woPF = spm_read_vols(Vhdr_pve2_woPF);
 
+% Vhdr_pve1_wPF = spm_vol(img_path_pve1_wPF);
+% pve1_wPF = spm_read_vols(Vhdr_pve1_wPF);
+% Vhdr_pve0_wPF = spm_vol(img_path_pve0_wPF);
+% pve0_wPF = spm_read_vols(Vhdr_pve0_wPF);
+% Vhdr_pve2_wPF = spm_vol(img_path_pve2_wPF);
+% pve2_wPF = spm_read_vols(Vhdr_pve2_wPF);
+
 % err_list_woPF = [];
 % err_list_wPF = [];
 
@@ -57,7 +51,7 @@ V_mapfsoma = spm_read_vols(Vhdr_map);
 %figure, imagesc(V_map(:,:,40));
 % figure, histogram(V_map);
 
-V_mapfsoma=V_mapfsoma>0.1;
+V_mapfsoma=V_mapfsoma>0.4;
 %deep grey matter putamen region
 % figure, imagesc(V_mapfsoma(:,:,40));
 
@@ -179,7 +173,7 @@ p2.Marker = '.';
 p3.LineStyle = '-';
 p3.Marker = '.';
 %ylim([10 13.5]);
-%ylim([10 13.5]);
+ylim([5 14]);
 legend([p1 p2 p3],{'Grey Matter', 'White Matter', 'CSF'});
 xlabel('Threashold value');
 %ylabel(ylabel);
