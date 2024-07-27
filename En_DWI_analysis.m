@@ -34,7 +34,7 @@ for i = index
     
     V_GM = V_GM_tot;
 
-    V_GM(V_GM>threasholds(i))=1;
+    V_GM(V_GM>=threasholds(i))=1;
     V_GM(V_GM<threasholds(i))=0;    
     
     %Mask SANDI map with grey matter
@@ -112,7 +112,11 @@ for i = index
 end
 h = axes(fig,'visible','off'); 
 sgtitle("Rsoma map masked with GM varying thr")
-c = colorbar(h,'Position',[0.93 0.4 0.019 0.4]);  % attach colorbar to h
+maxi=max(V_SANDI_masked, [],'all');
+dy=maxi/10;
+labels = round(0:dy:maxi);
+c = colorbar(h,'Position',[0.93 0.4 0.019 0.4], 'TickLabels',[0 2 3 5 6 8 9 11 12 14 16]);  % attach colorbar to h
+% c.Limits=[0 maxi];
 set(figure(3), 'Units', 'Normalized', 'Outerposition', [0 0 1 1]);
 saveas(figure(3), '/media/nas_rete/Work_manuela/DWI_En_modeling/main/rsoma_maps_threasholdingPVE.png');
 
@@ -228,7 +232,10 @@ for i = index
 end
 h = axes(fig,'visible','off'); 
 sgtitle("Rsoma map masked with fsoma greater or equal than thr")
-c = colorbar(h,'Position',[0.93 0.4 0.019 0.4]);  
+maxi=max(V_Rsoma_per_fsoma, [],'all');
+dy=maxi/10;
+labels = round(0:dy:maxi);
+c = colorbar(h,'Position',[0.93 0.4 0.019 0.4], 'TickLabels',[0 2 3 5 6 8 9 11 12 14 16]);
 set(figure(6), 'Units', 'Normalized', 'Outerposition', [0 0 1 1]);
 saveas(figure(6), '/media/nas_rete/Work_manuela/DWI_En_modeling/main/rsoma_maps_threasholdingfsomamap.png');
 
