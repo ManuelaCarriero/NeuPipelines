@@ -232,6 +232,68 @@ c = colorbar(h,'Position',[0.93 0.4 0.019 0.4]);
 set(figure(6), 'Units', 'Normalized', 'Outerposition', [0 0 1 1]);
 saveas(figure(6), '/media/nas_rete/Work_manuela/DWI_En_modeling/main/rsoma_maps_threasholdingfsomamap.png');
 
+%%%%
+V_GM = V_GM_tot;
+V_GM(V_GM>0)=1;
+V_GM(V_GM<=0)=0;
+
+V_fsoma_masked = V_fsoma.*V_GM;
+V_CBF_masked = V_CBF.*V_GM;
+
+r = corrcoef(V_fsoma_masked(:), V_CBF_masked(:)); 
+
+figure(7), 
+scatter(V_CBF_tot(:), V_fsoma_masked(:))
+ylabel('fsoma(%)');
+%ylabel(strcat(label,' masked with fsoma'));
+xlabel('CBF (ml/100g/min)');
+title("corr\_coef="+r(2));
+saveas(figure(7), '/media/nas_rete/Work_manuela/DWI_En_modeling/main/corr_coef_rsomavscbf.png');
+
+V_SANDI = V_fsoma;
+
+figure(8), 
+for i = index
+    
+    V_GM = V_GM_tot;
+
+    V_GM(V_GM>threasholds(i))=1;
+    V_GM(V_GM<threasholds(i))=0;    
+    
+    %Mask SANDI map with grey matter
+    V_SANDI_masked=V_SANDI.*V_GM;
+
+    V_CBF = V_CBF_tot;
+    V_CBF_masked = V_CBF.*V_GM;
+        
+    % Plot and calculate correlation
+    
+    v_CBF=V_CBF_masked(:);
+    v_SANDI=V_SANDI_masked(:);
+    %v_Rsoma_per_fsoma = V_Rsoma_per_fsoma(:);
+    
+    r = corrcoef(v_CBF, v_SANDI); 
+    corr_values(i) = r(2);
+    
+    subplot(4,4,i)
+    scatter(v_CBF,v_SANDI)
+    thr = num2str(threasholds(i));
+    title(strcat("thr>=",thr))
+    xlabel('CBF (ml/100g/min)');
+    %ylabel(strcat(label,' masked with fsoma'));
+    ylabel(strcat('fsoma(%)',' Signal'));
+end
+sgtitle("fsoma vs CBF increasing GM PVE threashold (thr)");
+set(figure(8), 'Units', 'Normalized', 'Outerposition', [0 0 1 1]);
+saveas(figure(8), '/media/nas_rete/Work_manuela/DWI_En_modeling/main/fsoma_vs_cbf_GMmask.png');
+
+figure(9), 
+p = plot(threasholds, corr_values, '-o', 'LineWidth', 1, 'MarkerFaceColor','b', 'MarkerSize',3);
+xlabel('PVE threashold');
+ylabel('r');
+title('corr\_coef fsoma (masked with GM) vs CBF');
+set(figure(9), 'Units', 'Normalized', 'Outerposition', [0 0 1 1]);
+saveas(figure(9), '/media/nas_rete/Work_manuela/DWI_En_modeling/main/corr_coef_fsomavscbf_GMmask.png');
 
 
 %%
