@@ -1,127 +1,54 @@
 %% Comparison bw UniCh and UniGe 
 % edited by Alessandra Caporale, 14/11/2024
 
-%% Vitality run 1
-V_Din_tots_vitality={};
-V_De_tots_vitality={};
-V_rsoma_tots_vitality={};
-V_fsoma_tots_vitality={};
-V_fextra_tots_vitality={};
-V_fneurite_tots_vitality={};
+run='run-01';%CHANGE
+%%%%%%%%%%%%%
 
-for i=1:12
+subjects = importdata(strcat('/media/nas_rete/Vitality/code/subjs_DWI.txt'));
 
-    if i < 10
+V_CBF_tots={};
+V_CMRO2_tots={};
+V_SANDI_tots={};
+V_fsoma_tots={};
 
-        i=num2str(i);
-        img_path_rsoma_vitality = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-00',i,'_run-01_SANDI-fit_Rsoma_2MNI2mm.nii.gz');
-        img_path_fsoma_vitality = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-00',i,'_run-01_SANDI-fit_fsoma_2MNI2mm.nii.gz');
-        img_path_De_vitality = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-00',i,'_run-01_SANDI-fit_De_2MNI2mm.nii.gz');
-        img_path_Din_vitality = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-00',i,'_run-01_SANDI-fit_Din_2MNI2mm.nii.gz');
-        img_path_fneurite_vitality = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-00',i,'_run-01_SANDI-fit_fneurite_2MNI2mm.nii.gz');
-        img_path_fextra_vitality = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-00',i,'_run-01_SANDI-fit_fextra_2MNI2mm.nii.gz');
 
-    else
+%run2
+subjects([11,13,27])=[];
 
-        i=num2str(i);
-        img_path_rsoma_vitality = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-0',i,'_run-01_SANDI-fit_Rsoma_2MNI2mm.nii.gz');
-        img_path_fsoma_vitality = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-0',i,'_run-01_SANDI-fit_fsoma_2MNI2mm.nii.gz');
-        img_path_De_vitality = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-0',i,'_run-01_SANDI-fit_De_2MNI2mm.nii.gz');
-        img_path_Din_vitality = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-0',i,'_run-01_SANDI-fit_Din_2MNI2mm.nii.gz');
-        img_path_fneurite_vitality = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-0',i,'_run-01_SANDI-fit_fneurite_2MNI2mm.nii.gz');
-        img_path_fextra_vitality = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-0',i,'_run-01_SANDI-fit_fextra_2MNI2mm.nii.gz');
+n_subjs=length(subjects);
 
-    end
+for i = 1:1:n_subjs 
 
-    Vhdr = spm_vol(img_path_rsoma_vitality);
-    V_rsoma_tot = spm_read_vols(Vhdr);
-    V_rsoma_tots_vitality{end+1} = V_rsoma_tot;
 
-    Vhdr = spm_vol(img_path_fsoma_vitality);
+    subj=num2str(subjects{i});
+    img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/250101/CBF0toMNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CBF_map_2MNI2mm.nii.gz');
+    img_path_CMRO2 = strcat('/media/nas_rete/Vitality/maps2MNI/250101/CMRO20toMNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CMRO2_map_2MNI2mm.nii.gz');
+    img_path_SANDI = strcat('/media/nas_rete/Vitality/maps2MNI/250101/SANDItoMNI/',subj,'_',run,'_SANDI-fit_Rsoma_2MNI2mm.nii.gz');
+    img_path_fsoma = strcat('/media/nas_rete/Vitality/maps2MNI/250101/SANDItoMNI/',subj,'_',run,'_SANDI-fit_fsoma_2MNI2mm.nii.gz');
+
+    Vhdr = spm_vol(img_path_CBF);
+    V_CBF_tot = spm_read_vols(Vhdr);
+    V_CBF_tots{end+1} = V_CBF_tot;
+
+    Vhdr = spm_vol(img_path_CMRO2);
+    V_CMRO2_tot = spm_read_vols(Vhdr);
+    V_CMRO2_tots{end+1} = V_CMRO2_tot;
+
+    Vhdr = spm_vol(img_path_SANDI);
+    V_SANDI_tot = spm_read_vols(Vhdr);
+    V_SANDI_tots{end+1} = V_SANDI_tot;
+
+    Vhdr = spm_vol(img_path_fsoma);
     V_fsoma_tot = spm_read_vols(Vhdr);
-    V_fsoma_tots_vitality{end+1} = V_fsoma_tot;
+    V_fsoma_tots{end+1} = V_fsoma_tot;
 
-    Vhdr = spm_vol(img_path_fneurite_vitality);
-    V_fneurite_tot = spm_read_vols(Vhdr);
-    V_fneurite_tots_vitality{end+1} = V_fneurite_tot;
-
-    Vhdr = spm_vol(img_path_fextra_vitality);
-    V_fextra_tot = spm_read_vols(Vhdr);
-    V_fextra_tots_vitality{end+1} = V_fextra_tot;
-
-    Vhdr = spm_vol(img_path_Din_vitality);
-    V_Din_tot = spm_read_vols(Vhdr);
-    V_Din_tots_vitality{end+1} = V_Din_tot;
-
-    Vhdr = spm_vol(img_path_De_vitality);
-    V_De_tot = spm_read_vols(Vhdr);
-    V_De_tots_vitality{end+1} = V_De_tot;
 
 end
 
-%% Vitality run 2
-V_Din_tots_vitality_run2={};
-V_De_tots_vitality_run2={};
-V_rsoma_tots_vitality_run2={};
-V_fsoma_tots_vitality_run2={};
-V_fextra_tots_vitality_run2={};
-V_fneurite_tots_vitality_run2={};
-
-n_subjs=12;
-lst=1:1:n_subjs;
-lst(lst==11)=[];
-
-
-for i = lst
-
-    if i < 10
-
-        i=num2str(i);
-        img_path_rsoma_vitality = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-00',i,'_run-02_SANDI-fit_Rsoma_2MNI2mm.nii.gz');
-        img_path_fsoma_vitality = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-00',i,'_run-02_SANDI-fit_fsoma_2MNI2mm.nii.gz');
-        img_path_De_vitality = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-00',i,'_run-02_SANDI-fit_De_2MNI2mm.nii.gz');
-        img_path_Din_vitality = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-00',i,'_run-02_SANDI-fit_Din_2MNI2mm.nii.gz');
-        img_path_fneurite_vitality = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-00',i,'_run-02_SANDI-fit_fneurite_2MNI2mm.nii.gz');
-        img_path_fextra_vitality = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-00',i,'_run-02_SANDI-fit_fextra_2MNI2mm.nii.gz');
-
-    else
-
-
-
-        i=num2str(i);
-        img_path_rsoma_vitality = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-0',i,'_run-02_SANDI-fit_Rsoma_2MNI2mm.nii.gz');
-        img_path_fsoma_vitality = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-0',i,'_run-02_SANDI-fit_fsoma_2MNI2mm.nii.gz');
-        img_path_De_vitality = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-0',i,'_run-02_SANDI-fit_De_2MNI2mm.nii.gz');
-        img_path_Din_vitality = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-0',i,'_run-02_SANDI-fit_Din_2MNI2mm.nii.gz');
-        img_path_fneurite_vitality = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-0',i,'_run-02_SANDI-fit_fneurite_2MNI2mm.nii.gz');
-        img_path_fextra_vitality = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-0',i,'_run-02_SANDI-fit_fextra_2MNI2mm.nii.gz');
-
-    end
-
-    Vhdr = spm_vol(img_path_rsoma_vitality);
-    V_rsoma_tot = spm_read_vols(Vhdr);
-    V_rsoma_tots_vitality_run2{end+1} = V_rsoma_tot;
-
-    Vhdr = spm_vol(img_path_fsoma_vitality);
-    V_fsoma_tot = spm_read_vols(Vhdr);
-    V_fsoma_tots_vitality_run2{end+1} = V_fsoma_tot;
-
-    Vhdr = spm_vol(img_path_fneurite_vitality);
-    V_fneurite_tot = spm_read_vols(Vhdr);
-    V_fneurite_tots_vitality_run2{end+1} = V_fneurite_tot;
-
-    Vhdr = spm_vol(img_path_fextra_vitality);
-    V_fextra_tot = spm_read_vols(Vhdr);
-    V_fextra_tots_vitality_run2{end+1} = V_fextra_tot;
-
-    Vhdr = spm_vol(img_path_Din_vitality);
-    V_Din_tot = spm_read_vols(Vhdr);
-    V_Din_tots_vitality_run2{end+1} = V_Din_tot;
-
-    Vhdr = spm_vol(img_path_De_vitality);
-    V_De_tot = spm_read_vols(Vhdr);
-    V_De_tots_vitality_run2{end+1} = V_De_tot;
-
+if strcmp(run,'run-01')
+    V_rsoma_tots_vitality_run1=V_SANDI_tots;
+else
+    V_rsoma_tots_vitality_run2=V_SANDI_tots;
 end
 
 %% PRIN
@@ -196,13 +123,13 @@ V_GM = spm_read_vols(Vhdr);
 %MASK WITH GM
 %MEAN OVER ALL GM PIXELS
 %CHECK IF VITALITY MEAN DISTRIBUTION IS EQUAL TO PRIN MEAN DISTRIBUTION
-means_vitality_run1_tot=[];
-n_subjs=12;
+means_vitality_run1=[];
+
 for i = 1:n_subjs
-    V_rsoma=V_rsoma_tots_vitality{i};
+    V_rsoma=V_rsoma_tots_vitality_run1{i};
     V_rsoma_masked=V_rsoma.*(V_GM>0.5);
     V_rsoma_masked(V_rsoma_masked==0)=NaN;
-    means_vitality_run1_tot(end+1)=nanmean(V_rsoma_masked(:));
+    means_vitality_run1(end+1)=nanmean(V_rsoma_masked(:));
 end
 
 means_prin_tot=[];
@@ -214,7 +141,7 @@ for i = 1:n_subjs
     means_prin_tot(end+1)=nanmean(V_rsoma_masked(:));
 end
 
-n_subjs=11;
+
 means_vitality_run2=[];
 for i = 1:n_subjs
     V_rsoma=V_rsoma_tots_vitality_run2{i};
@@ -272,8 +199,7 @@ ylabel('Counts','FontWeight','bold','FontSize',15);
 legend();
 
 %%
-means_vitality_run1=means_vitality_run1_tot;
-means_vitality_run1(11)=[];
+
 [h,p]=ttest(means_vitality_run1, means_vitality_run2);
 [r_corr,p_corr]=corrcoef(means_vitality_run1, means_vitality_run2,'rows','complete');
 
@@ -284,14 +210,14 @@ r_corr_str=num2str(round(r_corr(2),2));
 p_corr_str=num2str(round(p_corr(2),2));
 
 figure, 
-h1=histogram(means_vitality_run2,BinWidth=0.3);
+h1=histogram(means_vitality_run2,BinWidth=0.1,EdgeAlpha=0.7);
 hold on
-h2=histogram(means_vitality_run1,BinWidth=0.3);
+h2=histogram(means_vitality_run1,BinWidth=0.1,EdgeAlpha=0.7);
 txt = {strcat('t = ',h_str,', p-value:',p_str)};
-text(11.2,4.5,txt, 'FontWeight', 'bold','FontSize',15);
+text(11.9,9.5,txt, 'FontWeight', 'bold','FontSize',12);
 txt = {strcat('r = ',r_corr_str,', p-value:',p_corr_str)};
-text(11.2,5,txt, 'FontWeight', 'bold','FontSize',15);
-ylim([0,6])
+text(11.9,10,txt, 'FontWeight', 'bold','FontSize',12);
+ylim([0,12])
 xlabel('Mean soma size in Grey Matter','FontWeight','bold','FontSize',15);
 ylabel('Counts','FontWeight','bold','FontSize',15);
 legend();
@@ -300,48 +226,111 @@ legend();
 
 %% check b0 intensities in raw Vitality image
 
-img_path=strcat('/media/nas_rete/Vitality/sub-001/dwi/sub-001_run-01_dwi.nii.gz');
-Vhdr = spm_vol(img_path);
-V_run1 = spm_read_vols(Vhdr);
-size(V_run1)
+% img_path=strcat('/media/nas_rete/Vitality/sub-001/dwi/sub-001_run-01_dwi.nii.gz');
+% Vhdr = spm_vol(img_path);
+% V_run1 = spm_read_vols(Vhdr);
+% size(V_run1)
+% 
+% img_path=strcat('/media/nas_rete/Vitality/maps2MNI/SegSub01_t1_mp2rage/sub-001_run-01_PVE_0_on_b0.nii.gz');
+% Vhdr = spm_vol(img_path);
+% V_PVE_run1 = spm_read_vols(Vhdr);
+% size(V_PVE_run1)
+% 
+% img_path=strcat('/media/nas_rete/Vitality/sub-001/dwi/sub-001_run-02_dwi.nii.gz');
+% Vhdr = spm_vol(img_path);
+% V_run2 = spm_read_vols(Vhdr);
+% size(V_run2)
+% 
+% img_path=strcat('/media/nas_rete/Vitality/maps2MNI/SegSub01_t1_mp2rage/sub-001_run-02_PVE_0_on_b0.nii.gz');
+% Vhdr = spm_vol(img_path);
+% V_PVE_run2 = spm_read_vols(Vhdr);
+% size(V_PVE_run2)
 
-img_path=strcat('/media/nas_rete/Vitality/maps2MNI/SegSub01_t1_mp2rage/sub-001_run-01_PVE_0_on_b0.nii.gz');
-Vhdr = spm_vol(img_path);
-V_PVE_run1 = spm_read_vols(Vhdr);
-size(V_PVE_run1)
+run='run-01';%CHANGE
+%%%%%%%%%%%%%
 
-img_path=strcat('/media/nas_rete/Vitality/sub-001/dwi/sub-001_run-02_dwi.nii.gz');
-Vhdr = spm_vol(img_path);
-V_run2 = spm_read_vols(Vhdr);
-size(V_run2)
+subjects = importdata(strcat('/media/nas_rete/Vitality/code/subjs_DWI.txt'));
 
-img_path=strcat('/media/nas_rete/Vitality/maps2MNI/SegSub01_t1_mp2rage/sub-001_run-02_PVE_0_on_b0.nii.gz');
-Vhdr = spm_vol(img_path);
-V_PVE_run2 = spm_read_vols(Vhdr);
-size(V_PVE_run2)
+V_pve0_tots={};
+V_dwi_tots={};
 
-%create dataframe with volumes in one column and bvalues in an other column
-%tell to reorder rows of dataframe according to ordered values of second 
-%column
-a=size(V_run1);
-means_pve0_run1=[];
-for i = 1:a(4)
-V_PVE_run1(V_PVE_run1>0)=1;
-V_PVE_run1(V_PVE_run1<1)=0;
-V_masked_with_PVE=V_run1(:,:,:,i).*V_PVE_run1;
-mean_pve0=mean(V_masked_with_PVE,"all");
-means_pve0_run1(end+1)=mean_pve0;
+
+
+%run2
+subjects([11,13,27])=[];
+
+n_subjs=length(subjects);
+
+for i = 1:1:n_subjs
+    i
+
+    subj=num2str(subjects{i});
+    img_path_pve0 = strcat('/media/nas_rete/Vitality/maps2MNI/pve_on_b0/',subj,'_',run,'_PVE_0_on_b0.nii.gz');
+
+    Vhdr = spm_vol(img_path_pve0);
+    V_pve0_tot = spm_read_vols(Vhdr);
+    V_pve0_tots{end+1} = V_pve0_tot;
 end
 
-b=size(V_run2);
-means_pve0_run2=[];
-for i = 1:b(4)
-V_PVE_run2(V_PVE_run2>0)=1;
-V_PVE_run2(V_PVE_run2<1)=0;
-V_masked_with_PVE=V_run2(:,:,:,i).*V_PVE_run2;
-mean_pve0=mean(V_masked_with_PVE,"all");
-means_pve0_run2(end+1)=mean_pve0;
+%It's really slow (maybe it depends on images since the raw images are heavier)
+for i = 1:1:n_subjs
+    i
+    img_path_dwi = strcat('/media/nas_rete/Vitality/',subj,'/dwi/',subj,'_',run,'_dwi.nii.gz');
+
+
+    Vhdr = spm_vol(img_path_dwi);
+    V_dwi_tot = spm_read_vols(Vhdr);
+    V_dwi_tots{end+1} = V_dwi_tot;
+
 end
+
+if strcmp(run,'run-01')
+    means_pve0_run1_subjs=[];
+    for j=1:n_subjs
+        j
+        V_dwi_tots_run1=V_dwi_tots{j};
+        V_pve0_tots_run1=V_pve0_tots{j};
+
+        %create dataframe with volumes in one column and bvalues in an other column
+        %tell to reorder rows of dataframe according to ordered values of second
+        %column
+        a=size(V_dwi_tots_run1);
+        means_pve0_run1=[];
+        for i = 1:a(4)
+            V_pve0_tots_run1(V_pve0_tots_run1>0)=1;
+            V_pve0_tots_run1(V_pve0_tots_run1<1)=0;
+            V_masked_with_PVE=V_dwi_tots_run1(:,:,:,i).*V_pve0_tots_run1;
+            mean_pve0=mean(V_masked_with_PVE,"all");
+            means_pve0_run1(end+1)=mean_pve0;
+        end
+        means_pve0_run1_subjs(j,:)=means_pve0_run1;
+    end
+
+else
+    means_pve0_run2_subjs=[];
+    for j=1:n_subjs
+        j
+        V_dwi_tots_run2=V_dwi_tots{j};
+        V_pve0_tots_run2=V_pve0_tots{j};
+
+        b=size(V_dwi_tots_run2);
+        means_pve0_run2=[];
+        for i = 1:b(4)
+            V_pve0_tots_run2(V_pve0_tots_run2>0)=1;
+            V_pve0_tots_run2(V_pve0_tots_run2<1)=0;
+            V_masked_with_PVE=V_dwi_tots_run2(:,:,:,i).*V_pve0_tots_run2;
+            mean_pve0=mean(V_masked_with_PVE,"all");
+            means_pve0_run2(end+1)=mean_pve0;
+        end
+        means_pve0_run2_subjs(j,:)=means_pve0_run2;
+    end
+end
+%%
+
+
+mean_pve0_all_subjs_run1=mean(means_pve0_run1_subjs,1);
+mean_pve0_all_subjs_run2=mean(means_pve0_run2_subjs,1);
+
 
 % figure, 
 % scatter(1:length(means_pve0_run1), means_pve0_run1);
@@ -349,25 +338,26 @@ end
 % scatter(1:length(means_pve0_run2), means_pve0_run2);
 % legend('run1','run2');
 
+%assuming b-values are the same for all runs and subjs
 sub001run01dwi=load('/media/nas_rete/Vitality/sub-001/dwi/sub-001_run-01_dwi.bval');
 sub001run02dwi=load('/media/nas_rete/Vitality/sub-001/dwi/sub-001_run-02_dwi.bval');
 
 bvalues=unique(sub001run01dwi);
 
-vec_run1=cat(1,means_pve0_run1, sub001run01dwi);
+vec_run1=cat(1,mean_pve0_all_subjs_run1, sub001run01dwi);
 vec_run1=vec_run1';
 mean_b0_run1=mean(vec_run1(vec_run1(:,2)==0,1));
 
-vec_run2 = cat(1, means_pve0_run2, sub001run02dwi);
+vec_run2 = cat(1, mean_pve0_all_subjs_run2, sub001run02dwi);
 vec_run2=vec_run2';
 mean_b0_run2=mean(vec_run2(vec_run2(:,2)==0,1));
 
 
 
 figure, 
-h = scatter(vec_run1(:,2),log10(vec_run1(:,1)/mean_b0_run1),'o');
+s = scatter(vec_run1(:,2),log10(vec_run1(:,1)/mean_b0_run1),'o');
 hold on
-s = scatter(vec_run2(:,2), log10(vec_run2(:,1)/mean_b0_run2),'o');
+h = scatter(vec_run2(:,2), log10(vec_run2(:,1)/mean_b0_run2),'o');
 legend("run1", "run2", "FontSize",15, 'FontWeight','bold');
 xlabel("b-values", "FontSize",15, 'FontWeight','bold');
 ylabel("S/S_0", "FontSize",15, 'FontWeight','bold');
@@ -390,9 +380,9 @@ for i = 1:length(bvalues)
     j=num2str(bval);
 
     subplot(3,3,i);
-    s = scatter(1:length(b0_run1),b0_run1/max(b0_run1),'o');
+    s = scatter(1:length(b0_run1),b0_run1/mean_b0_run1,'o');
     hold on
-    h = scatter(1:length(b0_run2),b0_run2/max(b0_run2),'o');
+    h = scatter(1:length(b0_run2),b0_run2/mean_b0_run2,'o');
     s.MarkerEdgeColor = 'b';
     s.MarkerFaceColor = 'b';
     h.MarkerEdgeColor = 'r';
@@ -410,9 +400,9 @@ lgd.Title.FontSize = 15;
 b0_run2=vec_run2(vec_run2(:,2)==0);
 b0_run1=vec_run1(vec_run1(:,2)==0);
 figure,
-s = scatter(1:length(b0_run1),b0_run1/max(b0_run1),'o');
+s = scatter(1:length(b0_run1),b0_run1/mean_b0_run1,'o');
 hold on
-h = scatter(1:length(b0_run2),b0_run2/max(b0_run2),'o');
+h = scatter(1:length(b0_run2),b0_run2/mean_b0_run2,'o');
 s.MarkerEdgeColor = 'b';
 s.MarkerFaceColor = 'b';
 h.MarkerEdgeColor = 'r';
@@ -426,9 +416,26 @@ legend("run1","run2");
 b0_run2=vec_run2(vec_run2(:,2)==0);
 b0_run1=vec_run1(vec_run1(:,2)==0);
 %create dataframe and color them.
-b0_all_runs=cat(1, b0_run1/max(b0_run1), b0_run2/max(b0_run2));
+b0_all_runs=cat(1, b0_run1/mean_b0_run1, b0_run2/mean_b0_run2);
 figure,
-s = scatter(1:length(b0_all_runs(1:15,1)),b0_all_runs(1:15,1),'o');
+s = scatter(1:15,b0_all_runs(1:15,1),'o');
+hold on
+h = scatter(16:30,b0_all_runs(16:30,1),'o');
+s.MarkerEdgeColor = 'b';
+s.MarkerFaceColor = 'b';
+h.MarkerEdgeColor = 'r';
+h.MarkerFaceColor = 'r';    
+xlabel("time point", "FontSize",15, 'FontWeight','bold');
+ylabel("CSF Signal", "FontSize",15, 'FontWeight','bold');
+title(strcat("b-val=0"));
+legend("run1","run2");
+
+b0_run2=vec_run2(vec_run2(:,2)==0);
+b0_run1=vec_run1(vec_run1(:,2)==0);
+%create dataframe and color them.
+b0_all_runs=cat(1, b0_run1, b0_run2);
+figure,
+s = scatter(1:15,b0_all_runs(1:15,1),'o');
 hold on
 h = scatter(16:30,b0_all_runs(16:30,1),'o');
 s.MarkerEdgeColor = 'b';
@@ -621,7 +628,7 @@ saveas(figure(2), path_to_image);
 
 %% Reproducibility test (SANDI maps)
 
-subj='sub-03';
+subj='sub-01';
 outputpath=strcat('/media/nas_rete/PRIN2022PNRR_Tomass/Repeatability/',subj);
 
 GM_thr=0.5;
@@ -783,9 +790,17 @@ end
 
 %IV PART: HISTOGRAM
 
+%A two tailed hypothesis test
+[h12,p12,ci,stats]=ttest2(means_runs(1,:),means_runs(2,:));
+[h23,p23,ci,stats]=ttest2(means_runs(2,:),means_runs(3,:));
+[h13,p13,ci,stats]=ttest2(means_runs(1,:),means_runs(3,:));
+
+h=[h12, h23, h13];
+p=[p12, p23, p13];
+
 figure, 
-h=histogram(means_runs(1,:),50);
-h.FaceColor="g";
+s=histogram(means_runs(1,:),50);
+s.FaceColor="g";
 hold on
 k=histogram(means_runs(2,:),50);
 k.FaceColor="b";
@@ -796,16 +811,22 @@ title(subj,'FontWeight','bold','FontSize',15)
 xlabel('Mean soma size in Grey Matter','FontWeight','bold','FontSize',15);
 ylabel('Counts','FontWeight','bold','FontSize',15);
 legend("run-01","run-02","run-03");
+h12=num2str(h(1));
+h23=num2str(h(2));
+h13=num2str(h(3));
+p12=num2str(round(p(1),2));
+p23=num2str(round(p(2),2));
+p13=num2str(round(p(3),2));
+txt12 = {strcat('h12 = ',h12,', p-value12:',p12)};
+txt23 = {strcat('h23 = ',h23,', p-value23:',p23)};
+txt13 = {strcat('h13 = ',h13,', p-value13:',p13)};
+text(2.5,20,txt12, 'FontWeight', 'bold','FontSize',15);
+text(2.5,18,txt23, 'FontWeight', 'bold','FontSize',15);
+text(2.5,16,txt13, 'FontWeight', 'bold','FontSize',15);
 %ylim([0,25]);
 
 
-%A two tailed hypothesis test
-[h12,p12,ci,stats]=ttest2(means_runs(1,:),means_runs(2,:));
-[h23,p23,ci,stats]=ttest2(means_runs(2,:),means_runs(3,:));
-[h13,p13,ci,stats]=ttest2(means_runs(1,:),means_runs(3,:));
 
-h=[h12, h23, h13];
-p=[p12, p23, p13];
 
 
 % V PART: matrix for ICC analysis
