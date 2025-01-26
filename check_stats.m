@@ -1,7 +1,7 @@
 %% Comparison bw UniCh and UniGe 
 % edited by Alessandra Caporale, 14/11/2024
 
-run='run-01';%CHANGE
+run='run-02';%CHANGE
 %%%%%%%%%%%%%
 
 subjects = importdata(strcat('/media/nas_rete/Vitality/code/subjs_DWI.txt'));
@@ -222,6 +222,8 @@ xlabel('Mean soma size in Grey Matter','FontWeight','bold','FontSize',15);
 ylabel('Counts','FontWeight','bold','FontSize',15);
 legend();
 
+bias12=nanmean(means_vitality_run1,2)-nanmean(means_vitality_run2,2);
+
 %% check if regions with small rsoma and big rsoma correspond between acquisitions
 
 %% check b0 intensities in raw Vitality image
@@ -380,9 +382,9 @@ for i = 1:length(bvalues)
     j=num2str(bval);
 
     subplot(3,3,i);
-    s = scatter(1:length(b0_run1),b0_run1/mean_b0_run1,'o');
+    s = scatter(1:length(b0_run1),b0_run1,'o');%/mean_b0_run1
     hold on
-    h = scatter(1:length(b0_run2),b0_run2/mean_b0_run2,'o');
+    h = scatter(1:length(b0_run2),b0_run2,'o');%/mean_b0_run2
     s.MarkerEdgeColor = 'b';
     s.MarkerFaceColor = 'b';
     h.MarkerEdgeColor = 'r';
@@ -421,6 +423,8 @@ figure,
 s = scatter(1:15,b0_all_runs(1:15,1),'o');
 hold on
 h = scatter(16:30,b0_all_runs(16:30,1),'o');
+% hold on
+% yline(b0_all_runs(1),'--');
 s.MarkerEdgeColor = 'b';
 s.MarkerFaceColor = 'b';
 h.MarkerEdgeColor = 'r';
@@ -628,7 +632,7 @@ saveas(figure(2), path_to_image);
 
 %% Reproducibility test (SANDI maps)
 
-subj='sub-01';
+subj='sub-03';
 outputpath=strcat('/media/nas_rete/PRIN2022PNRR_Tomass/Repeatability/',subj);
 
 GM_thr=0.5;
@@ -641,7 +645,7 @@ end
 runs=1:3;
 
 
-% I PART
+% I PART: load data
 
 V_GM_tots={};
 
@@ -663,6 +667,26 @@ for run = runs
     V_atlas_tots{end+1} = V_atlas_tot;
 end
 
+V_rsoma_tots={};
+
+for run = runs
+    i=num2str(run);    
+    img_path=strcat('/media/nas_rete/PRIN2022PNRR_Tomass/Repeatability/BIDS/derivatives/',subj,'/dwi/run-0',i,'/SANDI_output/',subj,'_run-0',i,'_Rsoma_SANDI-fit.nii.gz');
+    Vhdr = spm_vol(img_path);
+    V_rsoma_tot = spm_read_vols(Vhdr);
+    V_rsoma_tots{end+1} = V_rsoma_tot;
+end
+
+V_fsoma_tots={};
+
+for run = runs
+    i=num2str(run);    
+    img_path=strcat('/media/nas_rete/PRIN2022PNRR_Tomass/Repeatability/BIDS/derivatives/',subj,'/dwi/run-0',i,'/SANDI_output/',subj,'_run-0',i,'_fsoma_SANDI-fit.nii.gz');
+    Vhdr = spm_vol(img_path);
+    V_fsoma_tot = spm_read_vols(Vhdr);
+    V_fsoma_tots{end+1} = V_fsoma_tot;
+end
+
 % II PART: check difference in labels between atlases in subjects spaces 
 run1=V_atlas_tots{1};
 run2=V_atlas_tots{2};
@@ -676,23 +700,6 @@ diff_run23=setxor(n_labels_run2,n_labels_run3);
 diff_run12=setxor(n_labels_run1,n_labels_run2);
 diff_run13=setxor(n_labels_run1,n_labels_run3);
 diff_runs=unique([diff_run23,diff_run12,diff_run13]);
-%for subj01
-%run 2 and 3 have 142 that run 1 does not have. Substitute 142 with 0 in
-%run 1
-
-% run2_diff=run2;
-% for i = 1:length(run2(:))
-%     if run2(i)==diff_run12
-%         run2_diff(i)=0;
-%     end
-% end
-% 
-% run3_diff=run3;
-% for i = 1:length(run3(:))
-%     if run3(i)==diff_run12
-%         run3_diff(i)=0;
-%     end
-% end
 
 run1_diff=run1;
 for i = 1:length(run1(:))
@@ -720,25 +727,7 @@ V_atlas_diff_tots={run1_diff, run2_diff, run3_diff}; %new list of atlases
 % size(unique(run3))
 % III PART: COMPUTE MEANS FOR EACH RUN
 
-V_rsoma_tots={};
 
-for run = runs
-    i=num2str(run);    
-    img_path=strcat('/media/nas_rete/PRIN2022PNRR_Tomass/Repeatability/BIDS/derivatives/',subj,'/dwi/run-0',i,'/SANDI_output/',subj,'_run-0',i,'_Rsoma_SANDI-fit.nii.gz');
-    Vhdr = spm_vol(img_path);
-    V_rsoma_tot = spm_read_vols(Vhdr);
-    V_rsoma_tots{end+1} = V_rsoma_tot;
-end
-
-V_fsoma_tots={};
-
-for run = runs
-    i=num2str(run);    
-    img_path=strcat('/media/nas_rete/PRIN2022PNRR_Tomass/Repeatability/BIDS/derivatives/',subj,'/dwi/run-0',i,'/SANDI_output/',subj,'_run-0',i,'_fsoma_SANDI-fit.nii.gz');
-    Vhdr = spm_vol(img_path);
-    V_fsoma_tot = spm_read_vols(Vhdr);
-    V_fsoma_tots{end+1} = V_fsoma_tot;
-end
 
 
 means_runs=[];
@@ -791,9 +780,9 @@ end
 %IV PART: HISTOGRAM
 
 %A two tailed hypothesis test
-[h12,p12,ci,stats]=ttest2(means_runs(1,:),means_runs(2,:));
-[h23,p23,ci,stats]=ttest2(means_runs(2,:),means_runs(3,:));
-[h13,p13,ci,stats]=ttest2(means_runs(1,:),means_runs(3,:));
+[h12,p12,ci,stats]=ttest(means_runs(1,:),means_runs(2,:));
+[h23,p23,ci,stats]=ttest(means_runs(2,:),means_runs(3,:));
+[h13,p13,ci,stats]=ttest(means_runs(1,:),means_runs(3,:));
 
 h=[h12, h23, h13];
 p=[p12, p23, p13];
@@ -814,15 +803,15 @@ legend("run-01","run-02","run-03");
 h12=num2str(h(1));
 h23=num2str(h(2));
 h13=num2str(h(3));
-p12=num2str(round(p(1),2));
-p23=num2str(round(p(2),2));
-p13=num2str(round(p(3),2));
-txt12 = {strcat('h12 = ',h12,', p-value12:',p12)};
-txt23 = {strcat('h23 = ',h23,', p-value23:',p23)};
-txt13 = {strcat('h13 = ',h13,', p-value13:',p13)};
-text(2.5,20,txt12, 'FontWeight', 'bold','FontSize',15);
-text(2.5,18,txt23, 'FontWeight', 'bold','FontSize',15);
-text(2.5,16,txt13, 'FontWeight', 'bold','FontSize',15);
+p12=num2str(round(p(1),5));
+p23=num2str(round(p(2),5));
+p13=num2str(round(p(3),5));
+txt12 = {strcat('t_{12} = ',h12,', p-value_{12}:',p12)};
+txt23 = {strcat('t_{23} = ',h23,', p-value_{23}:',p23)};
+txt13 = {strcat('t_{13} = ',h13,', p-value_{13}:',p13)};
+text(2.5,16,txt12, 'FontWeight', 'bold','FontSize',15);
+text(2.5,14,txt23, 'FontWeight', 'bold','FontSize',15);
+text(2.5,12,txt13, 'FontWeight', 'bold','FontSize',15);
 %ylim([0,25]);
 
 
@@ -845,6 +834,95 @@ end
 cd(folder)
 
 save('means_runs.mat','means_runs');
+
+bias12=nanmean(means_runs(1,:),2)-nanmean(means_runs(2,:),2);
+bias23=nanmean(means_runs(2,:),2)-nanmean(means_runs(3,:),2);
+bias13=nanmean(means_runs(1,:),2)-nanmean(means_runs(3,:),2);
+
+biases=[bias12, bias23, bias13];
+
+f = fopen(strcat('biases_',subj,'.txt'), 'w');
+fprintf(f, 'bias12 bias23 bias13\n');
+fprintf(f, '\n');
+writematrix(biases, strcat('biases_',subj,'.txt'), 'WriteMode', 'append');
+fclose(f);
+
+%% for many subjs
+
+% % I PART: load data
+% subjects = importdata(strcat('/media/nas_rete/PRIN2022PNRR_Tomass/Repeatability/BIDS/code/subjs_dwi.txt'));
+% subjects(3)=[];%remove sub-03 as it has no run3
+% n_subjs=length(subjects);
+% runs=1:3;
+% 
+% V_GM_tots_run1={};
+% V_GM_tots_run2={};
+% V_GM_tots_run3={};
+% 
+% V_atlas_tots_run1={};
+% V_atlas_tots_run2={};
+% V_atlas_tots_run3={};
+% 
+% V_rsoma_tots_run1={};
+% V_rsoma_tots_run2={};
+% V_rsoma_tots_run3={};
+% 
+% V_fsoma_tots_run1={};
+% V_fsoma_tots_run2={};
+% V_fsoma_tots_run3={};
+% 
+% for run = runs
+%     i=num2str(run);
+%     for j = 1:n_subjs
+%     
+%     subj=subjects{j};
+% 
+%     img_path=strcat('/media/nas_rete/PRIN2022PNRR_Tomass/Repeatability/BIDS/derivatives/',subj,'/dwi/run-0',i,'/',subj,'_run-0',i,'_desc-UNI_MP2RAGE_brain_pve_1_on_SANDI.nii.gz');
+%     Vhdr = spm_vol(img_path);
+%     V_GM_tot = spm_read_vols(Vhdr);
+% 
+%     img_path_atlas=strcat('/media/nas_rete/PRIN2022PNRR_Tomass/Repeatability/BIDS/derivatives/',subj,'/dwi/run-0',i,'/',subj,'_run-0',i,'_AAL3v1_2mm_on_res_De_SANDI-fit.nii.gz');
+%     Vhdr_atlas = spm_vol(img_path_atlas);
+%     V_atlas_tot = spm_read_vols(Vhdr_atlas);
+% 
+%     img_path_rsoma=strcat('/media/nas_rete/PRIN2022PNRR_Tomass/Repeatability/BIDS/derivatives/',subj,'/dwi/run-0',i,'/SANDI_output/',subj,'_run-0',i,'_Rsoma_SANDI-fit.nii.gz');
+%     Vhdr_rsoma = spm_vol(img_path_rsoma);
+%     V_rsoma_tot = spm_read_vols(Vhdr_rsoma);
+% 
+%     img_path_fsoma=strcat('/media/nas_rete/PRIN2022PNRR_Tomass/Repeatability/BIDS/derivatives/',subj,'/dwi/run-0',i,'/SANDI_output/',subj,'_run-0',i,'_fsoma_SANDI-fit.nii.gz');
+%     Vhdr_fsoma = spm_vol(img_path_fsoma);
+%     V_fsoma_tot = spm_read_vols(Vhdr_fsoma);
+% 
+%     if run==1
+%         V_GM_tots_run1{end+1} = V_GM_tot;
+%         V_atlas_tots_run1{end+1} = V_atlas_tot;
+%         V_rsoma_tots_run1{end+1} = V_rsoma_tot;
+%         V_fsoma_tots_run1{end+1} = V_fsoma_tot;
+%     elseif run==2
+%         V_GM_tots_run2{end+1} = V_GM_tot;
+%         V_atlas_tots_run2{end+1} = V_atlas_tot;
+%         V_rsoma_tots_run2{end+1} = V_rsoma_tot;
+%         V_fsoma_tots_run2{end+1} = V_fsoma_tot;
+%     elseif run==3
+%         V_GM_tots_run3{end+1} = V_GM_tot;
+%         V_atlas_tots_run3{end+1} = V_atlas_tot;
+%         V_rsoma_tots_run3{end+1} = V_rsoma_tot;
+%         V_fsoma_tots_run3{end+1} = V_fsoma_tot;
+%     end
+% 
+%     end
+%     
+% end
+
+% II PART: check difference in labels between atlases in subjects spaces 
+%note: for En_DWI_Analysis I didn't have problems for labels lost from one
+%subj to an other one.
+
+% diff between runs and between subjs (like sub-01 run-01 and sub-02
+% run-01...)
+% III PART: COMPUTE MEANS FOR EACH RUN
+%IV PART: HISTOGRAM
+
 
 %% raw data
 
