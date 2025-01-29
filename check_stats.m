@@ -633,207 +633,221 @@ saveas(figure(2), path_to_image);
 %% Reproducibility test (SANDI maps)
 
 subj='sub-03';
+
+parameters={'Rsoma','fneurite','fsoma','fextra','De','Din'};
 outputpath=strcat('/media/nas_rete/PRIN2022PNRR_Tomass/Repeatability/',subj);
 
-GM_thr=0.5;
-fsoma_thr=0.15;
-
-if exist(outputpath)==0
-mkdir (outputpath)
-end
-
-runs=1:3;
-
-
-% I PART: load data
-
-V_GM_tots={};
-
-for run = runs
-    i=num2str(run);    
-    img_path=strcat('/media/nas_rete/PRIN2022PNRR_Tomass/Repeatability/BIDS/derivatives/',subj,'/dwi/run-0',i,'/',subj,'_run-0',i,'_desc-UNI_MP2RAGE_brain_pve_1_on_SANDI.nii.gz');
-    Vhdr = spm_vol(img_path);
-    V_GM_tot = spm_read_vols(Vhdr);
-    V_GM_tots{end+1} = V_GM_tot;
-end
-
-V_atlas_tots={};
-
-for run = runs
-    i=num2str(run);    
-    img_path=strcat('/media/nas_rete/PRIN2022PNRR_Tomass/Repeatability/BIDS/derivatives/',subj,'/dwi/run-0',i,'/',subj,'_run-0',i,'_AAL3v1_2mm_on_res_De_SANDI-fit.nii.gz');
-    Vhdr = spm_vol(img_path);
-    V_atlas_tot = spm_read_vols(Vhdr);
-    V_atlas_tots{end+1} = V_atlas_tot;
-end
-
-V_rsoma_tots={};
-
-for run = runs
-    i=num2str(run);    
-    img_path=strcat('/media/nas_rete/PRIN2022PNRR_Tomass/Repeatability/BIDS/derivatives/',subj,'/dwi/run-0',i,'/SANDI_output/',subj,'_run-0',i,'_Rsoma_SANDI-fit.nii.gz');
-    Vhdr = spm_vol(img_path);
-    V_rsoma_tot = spm_read_vols(Vhdr);
-    V_rsoma_tots{end+1} = V_rsoma_tot;
-end
-
-V_fsoma_tots={};
-
-for run = runs
-    i=num2str(run);    
-    img_path=strcat('/media/nas_rete/PRIN2022PNRR_Tomass/Repeatability/BIDS/derivatives/',subj,'/dwi/run-0',i,'/SANDI_output/',subj,'_run-0',i,'_fsoma_SANDI-fit.nii.gz');
-    Vhdr = spm_vol(img_path);
-    V_fsoma_tot = spm_read_vols(Vhdr);
-    V_fsoma_tots{end+1} = V_fsoma_tot;
-end
-
-% II PART: check difference in labels between atlases in subjects spaces 
-run1=V_atlas_tots{1};
-run2=V_atlas_tots{2};
-run3=V_atlas_tots{3};
-
-n_labels_run1=unique(run1);
-n_labels_run2=unique(run2);
-n_labels_run3=unique(run3);
-
-diff_run23=setxor(n_labels_run2,n_labels_run3);
-diff_run12=setxor(n_labels_run1,n_labels_run2);
-diff_run13=setxor(n_labels_run1,n_labels_run3);
-diff_runs=unique([diff_run23,diff_run12,diff_run13]);
-
-run1_diff=run1;
-for i = 1:length(run1(:))
-    if run1(i)==diff_runs
-        run1_diff(i)=0;
+for par=1:6
+    parameter=parameters{par};
+    GM_thr=0.5;
+    fsoma_thr=0.15;
+    
+    if exist(outputpath)==0
+    mkdir (outputpath)
     end
-end
+    
+    runs=1:3;
+    
+    
+    % I PART: load data
+    
+    V_GM_tots={};
+    V_atlas_tots={};
+    V_rsoma_tots={};
+    V_fsoma_tots={};
+    
+    for run = runs
 
-run2_diff=run2;
-for i = 1:length(run2(:))
-    if run2(i)==diff_runs
-        run2_diff(i)=0;
-    end
-end
-
-run3_diff=run3;
-for i = 1:length(run3(:))
-    if run3(i)==diff_runs
-        run3_diff(i)=0;
-    end
-end
-
-V_atlas_diff_tots={run1_diff, run2_diff, run3_diff}; %new list of atlases
-%test
-% size(unique(run3))
-% III PART: COMPUTE MEANS FOR EACH RUN
-
-
-
-
-means_runs=[];
-
-for i = runs
-    V_fsoma = V_fsoma_tots{i};
-    V_fsoma(V_fsoma>fsoma_thr)=1;
-    V_fsoma(V_fsoma<1)=0;
-
-    V_GM = V_GM_tots{i};
-    V_GM(V_GM>fsoma_thr)=1;
-    V_GM(V_GM<1)=0;
-
-    V_rsoma_tot = V_rsoma_tots{i};
-    V_atlas_tot = V_atlas_diff_tots{i};
-
-    V_rsoma_GM = V_rsoma_tot.*V_GM.*V_fsoma;
-
-
-
-    regions=unique(V_atlas_tot(:));
-
-    means_run=[];
-
-    for k = 2:numel(regions)
-
-        V_atlas = V_atlas_tot;
-
-        for ii = 1:length(V_atlas_tot(:))
-            if V_atlas_tot(ii)==regions(k)
-                V_atlas(ii)=1;
-            else
-                V_atlas(ii)=0;
-            end
+        if strcmp(subj,'sub-03') && run==3
+            run=2;
         end
 
-        V_rsoma_masked=V_rsoma_GM.*V_atlas;
-        V_rsoma_masked(V_rsoma_masked==0)=NaN;
 
-        mean_rsoma=nanmean(V_rsoma_masked(:));
+        i=num2str(run);    
+        img_path=strcat('/media/nas_rete/PRIN2022PNRR_Tomass/Repeatability/BIDS/derivatives/',subj,'/dwi/run-0',i,'/',subj,'_run-0',i,'_desc-UNI_MP2RAGE_brain_pve_1_on_SANDI.nii.gz');
+        Vhdr = spm_vol(img_path);
+        V_GM_tot = spm_read_vols(Vhdr);
+        V_GM_tots{end+1} = V_GM_tot;
+   
+    
+    
+    
+    
+        i=num2str(run);    
+        img_path=strcat('/media/nas_rete/PRIN2022PNRR_Tomass/Repeatability/BIDS/derivatives/',subj,'/dwi/run-0',i,'/',subj,'_run-0',i,'_AAL3v1_2mm_on_res_De_SANDI-fit.nii.gz');
+        Vhdr = spm_vol(img_path);
+        V_atlas_tot = spm_read_vols(Vhdr);
+        V_atlas_tots{end+1} = V_atlas_tot;
 
-
-        means_run(end+1)=mean_rsoma;
+    
+    
+    
+    
+        i=num2str(run);    
+        img_path=strcat('/media/nas_rete/PRIN2022PNRR_Tomass/Repeatability/BIDS/derivatives/',subj,'/dwi/run-0',i,'/SANDI_output/',subj,'_run-0',i,'_',parameter,'_SANDI-fit.nii.gz');
+        Vhdr = spm_vol(img_path);
+        V_rsoma_tot = spm_read_vols(Vhdr);
+        V_rsoma_tots{end+1} = V_rsoma_tot;
+   
+    
+    
+    
+   
+        i=num2str(run);    
+        img_path=strcat('/media/nas_rete/PRIN2022PNRR_Tomass/Repeatability/BIDS/derivatives/',subj,'/dwi/run-0',i,'/SANDI_output/',subj,'_run-0',i,'_fsoma_SANDI-fit.nii.gz');
+        Vhdr = spm_vol(img_path);
+        V_fsoma_tot = spm_read_vols(Vhdr);
+        V_fsoma_tots{end+1} = V_fsoma_tot;
     end
-
-    means_runs(i,:)=means_run;
-
+    
+    % II PART: check difference in labels between atlases in subjects spaces 
+    run1=V_atlas_tots{1};
+    run2=V_atlas_tots{2};
+    run3=V_atlas_tots{3};
+    
+    n_labels_run1=unique(run1);
+    n_labels_run2=unique(run2);
+    n_labels_run3=unique(run3);
+    
+    diff_run23=setxor(n_labels_run2,n_labels_run3);
+    diff_run12=setxor(n_labels_run1,n_labels_run2);
+    diff_run13=setxor(n_labels_run1,n_labels_run3);
+    diff_runs=unique([diff_run23,diff_run12,diff_run13]);
+    
+    run1_diff=run1;
+    for i = 1:length(run1(:))
+        if run1(i)==diff_runs
+            run1_diff(i)=0;
+        end
+    end
+    
+    run2_diff=run2;
+    for i = 1:length(run2(:))
+        if run2(i)==diff_runs
+            run2_diff(i)=0;
+        end
+    end
+    
+    run3_diff=run3;
+    for i = 1:length(run3(:))
+        if run3(i)==diff_runs
+            run3_diff(i)=0;
+        end
+    end
+    
+    V_atlas_diff_tots={run1_diff, run2_diff, run3_diff}; %new list of atlases
+    %test
+    % size(unique(run3))
+    % III PART: COMPUTE MEANS FOR EACH RUN
+    
+    
+    
+    
+    means_runs=[];
+    
+    for i = runs
+        V_fsoma = V_fsoma_tots{i};
+        V_fsoma(V_fsoma>fsoma_thr)=1;
+        V_fsoma(V_fsoma<1)=0;
+    
+        V_GM = V_GM_tots{i};
+        V_GM(V_GM>fsoma_thr)=1;
+        V_GM(V_GM<1)=0;
+    
+        V_rsoma_tot = V_rsoma_tots{i};
+        V_atlas_tot = V_atlas_diff_tots{i};
+    
+        V_rsoma_GM = V_rsoma_tot.*V_GM.*V_fsoma;
+    
+    
+    
+        regions=unique(V_atlas_tot(:));
+    
+        means_run=[];
+    
+        for k = 2:numel(regions)
+    
+            V_atlas = V_atlas_tot;
+    
+            for ii = 1:length(V_atlas_tot(:))
+                if V_atlas_tot(ii)==regions(k)
+                    V_atlas(ii)=1;
+                else
+                    V_atlas(ii)=0;
+                end
+            end
+    
+            V_rsoma_masked=V_rsoma_GM.*V_atlas;
+            V_rsoma_masked(V_rsoma_masked==0)=NaN;
+    
+            mean_rsoma=nanmean(V_rsoma_masked(:));
+    
+    
+            means_run(end+1)=mean_rsoma;
+        end
+    
+        means_runs(i,:)=means_run;
+    
+    end
+    
+    %IV PART: HISTOGRAM
+    
+    %A two tailed hypothesis test
+    [h12,p12,ci,stats]=ttest(means_runs(1,:),means_runs(2,:));
+    [h23,p23,ci,stats]=ttest(means_runs(2,:),means_runs(3,:));
+    [h13,p13,ci,stats]=ttest(means_runs(1,:),means_runs(3,:));
+    
+    h=[h12, h23, h13];
+    p=[p12, p23, p13];
+    
+    figure, 
+    s=histogram(means_runs(1,:),50);
+    s.FaceColor="g";
+    hold on
+    k=histogram(means_runs(2,:),50);
+    k.FaceColor="b";
+    hold on
+    k=histogram(means_runs(3,:),50);
+    k.FaceColor="r";
+    title(subj,'FontWeight','bold','FontSize',15)
+    xlabel('Mean soma size in Grey Matter','FontWeight','bold','FontSize',15);
+    ylabel('Counts','FontWeight','bold','FontSize',15);
+    legend("run-01","run-02","run-03");
+    h12=num2str(h(1));
+    h23=num2str(h(2));
+    h13=num2str(h(3));
+    p12=num2str(round(p(1),5));
+    p23=num2str(round(p(2),5));
+    p13=num2str(round(p(3),5));
+    txt12 = {strcat('t_{12} = ',h12,', p-value_{12}:',p12)};
+    txt23 = {strcat('t_{23} = ',h23,', p-value_{23}:',p23)};
+    txt13 = {strcat('t_{13} = ',h13,', p-value_{13}:',p13)};
+    text(2.5,16,txt12, 'FontWeight', 'bold','FontSize',15);
+    text(2.5,14,txt23, 'FontWeight', 'bold','FontSize',15);
+    text(2.5,12,txt13, 'FontWeight', 'bold','FontSize',15);
+    %ylim([0,25]);
+    
+    
+    
+    
+    
+    % V PART: matrix for ICC analysis
+    
+    % k = strfind(subj,'-');
+    % subj(k)='';
+    % 
+    % struct.description = strcat('Matrix for ICC analysis',' ',subj);
+    % struct = setfield(struct,[strcat('means_runs_',subj)], means_runs);
+    folder = strcat(strcat('/media/nas_rete/PRIN2022PNRR_Tomass/Repeatability/',subj));
+    
+    if exist([folder])==0
+        mkdir(folder)
+    end
+    
+    cd(folder)
+    
+    save(strcat(subj,'_means_runs_',parameter,'.mat'),'means_runs');
 end
-
-%IV PART: HISTOGRAM
-
-%A two tailed hypothesis test
-[h12,p12,ci,stats]=ttest(means_runs(1,:),means_runs(2,:));
-[h23,p23,ci,stats]=ttest(means_runs(2,:),means_runs(3,:));
-[h13,p13,ci,stats]=ttest(means_runs(1,:),means_runs(3,:));
-
-h=[h12, h23, h13];
-p=[p12, p23, p13];
-
-figure, 
-s=histogram(means_runs(1,:),50);
-s.FaceColor="g";
-hold on
-k=histogram(means_runs(2,:),50);
-k.FaceColor="b";
-hold on
-k=histogram(means_runs(3,:),50);
-k.FaceColor="r";
-title(subj,'FontWeight','bold','FontSize',15)
-xlabel('Mean soma size in Grey Matter','FontWeight','bold','FontSize',15);
-ylabel('Counts','FontWeight','bold','FontSize',15);
-legend("run-01","run-02","run-03");
-h12=num2str(h(1));
-h23=num2str(h(2));
-h13=num2str(h(3));
-p12=num2str(round(p(1),5));
-p23=num2str(round(p(2),5));
-p13=num2str(round(p(3),5));
-txt12 = {strcat('t_{12} = ',h12,', p-value_{12}:',p12)};
-txt23 = {strcat('t_{23} = ',h23,', p-value_{23}:',p23)};
-txt13 = {strcat('t_{13} = ',h13,', p-value_{13}:',p13)};
-text(2.5,16,txt12, 'FontWeight', 'bold','FontSize',15);
-text(2.5,14,txt23, 'FontWeight', 'bold','FontSize',15);
-text(2.5,12,txt13, 'FontWeight', 'bold','FontSize',15);
-%ylim([0,25]);
-
-
-
-
-
-% V PART: matrix for ICC analysis
-
-% k = strfind(subj,'-');
-% subj(k)='';
-% 
-% struct.description = strcat('Matrix for ICC analysis',' ',subj);
-% struct = setfield(struct,[strcat('means_runs_',subj)], means_runs);
-folder = strcat(strcat('/media/nas_rete/PRIN2022PNRR_Tomass/Repeatability/',subj));
-
-if exist([folder])==0
-    mkdir(folder)
-end
-
-cd(folder)
-
-save('means_runs.mat','means_runs');
 
 bias12=nanmean(means_runs(1,:),2)-nanmean(means_runs(2,:),2);
 bias23=nanmean(means_runs(2,:),2)-nanmean(means_runs(3,:),2);
@@ -844,7 +858,7 @@ biases=[bias12, bias23, bias13];
 f = fopen(strcat('biases_',subj,'.txt'), 'w');
 fprintf(f, 'bias12 bias23 bias13\n');
 fprintf(f, '\n');
-writematrix(biases, strcat('biases_',subj,'.txt'), 'WriteMode', 'append');
+writematrix(biases, strcat('biases_',subj,'_',parameter,'.txt'), 'WriteMode', 'append');
 fclose(f);
 
 %% for many subjs
