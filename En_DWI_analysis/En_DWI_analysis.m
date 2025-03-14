@@ -85,95 +85,218 @@ plot_subj_corr(threasholds, index,  V_SANDI_tot, V_CBF_tot, V_GM_tot,SANDI_param
 %%%%%fneurite vs CBF (voxel wise considering medians over many subjects and
 %%%%%mask with GM and fsoma)
 
-n_subjs=12;
+%STUDY TO SET
+study='Vitality';
+
+
+%%%%%%%%%%%%%
+
+
+
+if strcmp(study,'Vitality')
+    subjects = importdata('/media/nas_rete/Vitality/code/subjs_DWI.txt');
+    run='run-01';%CHANGE
+    subjects([11,27])=[];
+elseif strcmp(study,'PRIN')
+    subjects=importdata('/media/nas_rete/PRINAntonello2022/BIDS/code/subjects_DWI.txt');
+elseif strcmp(study,'Cardiff')
+    subjects=importdata('/media/nas_rete/GLOVE_STUDY/DDC/scripts/subjects.txt');
+end
 
 V_CBF_tots={};
+V_CMRO2_tots={};
+V_SANDI_tots={};
+V_fsoma_tots={};
 
-for i = 1:1:n_subjs%lst
-    if i < 10
-        i=num2str(i);
-        img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/CBF0toMNI/sub-00',i,'_task-bh_run-01_dexi_volreg_asl_topup_CBF_map_2MNI2mm.nii.gz');
-    else
-        i=num2str(i);
-        img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/CBF0toMNI/sub-0',i,'_task-bh_run-01_dexi_volreg_asl_topup_CBF_map_2MNI2mm.nii.gz');
-    end
+n_subjs=length(subjects);
+
+%%%%%%%%%%%%%%%%%%%%%PARAMETERS TO SET
+micro_parameter='fneurite';
+energy='CBF'; %'CBF'
+%
+
+
+
+
+threasholds = 0.1:0.1:0.9;
+index = 1:1:numel(threasholds);
+
+low_thr=1;% remove zeros outside brain image
+V_fsoma_thr=0.15;
+subsample_perc=0.001;
+
+%%%%%%%%%%%%%%%%%%%%%%
+
+for i = 1:1:n_subjs %lst
+
+    %if i < 10
+
+        %i=num2str(i);
+        subj=num2str(subjects{i});
+
+        %Vitality
+        if strcmp(study,'Vitality')
+
+        img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/250101/CBF0toMNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CBF_map_2MNI2mm.nii.gz');        
+        img_path_CMRO2 = strcat('/media/nas_rete/Vitality/maps2MNI/250101/CMRO20toMNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CMRO2_map_2MNI2mm.nii.gz');
+        img_path_SANDI = strcat('/media/nas_rete/Vitality/maps2MNI/250101/SANDItoMNI/',subj,'_',run,'_SANDI-fit_',micro_parameter,'_2MNI2mm.nii.gz');
+        img_path_fsoma = strcat('/media/nas_rete/Vitality/maps2MNI/250101/SANDItoMNI/',subj,'_',run,'_SANDI-fit_fsoma_2MNI2mm.nii.gz');
+
+        %PRIN
+        elseif strcmp(study,'PRIN')
+
+        img_path_CBF = strcat('/media/nas_rete/PRINAntonello2022/BIDS/derivatives/',subj,'/perf/CBF0_2MNI/',subj,'_ep2d_dexi_pc_v1_rs_CBF0_2MNI.nii.gz');        
+%         img_path_CMRO2 = strcat('');
+        img_path_SANDI = strcat('/media/nas_rete/PRINAntonello2022/BIDS/derivatives/',subj,'/dwi/SANDI_2MNI/',subj,'_',micro_parameter,'_SANDI-fit_2MNI.nii.gz');
+        img_path_fsoma = strcat('/media/nas_rete/PRINAntonello2022/BIDS/derivatives/',subj,'/dwi/SANDI_2MNI/',subj,'_fsoma_SANDI-fit_2MNI.nii.gz');
+  
+        %Cardiff      
+        elseif strcmp(study,'Cardiff')
+
+        img_path_CBF = strcat('/media/nas_rete/GLOVE_STUDY/DDC/registered/CBF2MNI-resting/',subj,'_resting_task_CBF_map_2MNI.nii.gz');        
+%         img_path_CMRO2 = strcat('');
+        img_path_SANDI = strcat('/media/nas_rete/GLOVE_STUDY/DDC/derivatives/',subj,'/resting/dwi/SANDI_Output_2MNI/',subj,'_resting_SANDI-fit_',micro_parameter,'_2MNI.nii.gz');
+        img_path_fsoma = strcat('/media/nas_rete/GLOVE_STUDY/DDC/derivatives/',subj,'/resting/dwi/SANDI_Output_2MNI/',subj,'_resting_SANDI-fit_fsoma_2MNI.nii.gz');
+
+        end
+
+
+
     Vhdr = spm_vol(img_path_CBF);
     V_CBF_tot = spm_read_vols(Vhdr);
 %     figure, imagesc(rot90(squeeze(V_CBF_tot(30,:,:)))) 
 %     imshow(rot90(squeeze(V(30,:,:))),[])
     V_CBF_tots{end+1} = V_CBF_tot;
+
+    Vhdr = spm_vol(img_path_CMRO2);
+    V_CMRO2_tot = spm_read_vols(Vhdr);
+%     figure, imagesc(rot90(squeeze(V_CBF_tot(30,:,:)))) 
+%     imshow(rot90(squeeze(V(30,:,:))),[])
+    V_CMRO2_tots{end+1} = V_CMRO2_tot;
+
+    Vhdr = spm_vol(img_path_SANDI);
+    V_SANDI_tot = spm_read_vols(Vhdr);
+    V_SANDI_tots{end+1} = V_SANDI_tot;
+
+    Vhdr = spm_vol(img_path_fsoma);
+    V_fsoma_tot = spm_read_vols(Vhdr);
+    V_fsoma_tots{end+1} = V_fsoma_tot;
+
+
 end
 
 
-
-V_fsoma_tots={};
-
-V_fneurite_tots={};
-
-V_fextra_tots={};
-
-V_Din_tots={};
-
-V_De_tots={};
-
-%parameter = 'De';
-
-
-
-V_rsoma_tots={};
-
-parameters = {'Rsoma', 'fsoma','fneurite','Din','De','fextra'};
-
-for j = 1:length(parameters)
-    parameter = parameters{j};
-    for i = 1:1:n_subjs%lst
-        if i < 10
-
-            i=num2str(i);
-            img_path_SANDI = strcat('/media/nas_rete/Vitality/maps2MNI/sub-00',i,'_run-01_SANDI-fit_',parameter,'_2MNI.nii.gz');
-        else
-
-            i=num2str(i);
-            img_path_SANDI = strcat('/media/nas_rete/Vitality/maps2MNI/sub-0',i,'_run-01_SANDI-fit_',parameter,'_2MNI.nii.gz');
-        end
-        Vhdr = spm_vol(img_path_SANDI);
-        V_SANDI_tot = spm_read_vols(Vhdr);
-
-        if strcmp(parameter,'Rsoma')
-
-            V_rsoma_tots{end+1} = V_SANDI_tot;
-
-        elseif strcmp(parameter,'fsoma')
-
-            V_fsoma_tots{end+1} = V_SANDI_tot;
-
-        elseif strcmp(parameter,'fneurite')
-
-            V_fneurite_tots{end+1} = V_SANDI_tot;
-        
-        elseif strcmp(parameter,'Din')
-
-            V_Din_tots{end+1} = V_SANDI_tot;
-
-        elseif strcmp(parameter,'De')
-
-            V_De_tots{end+1} = V_SANDI_tot;
-
-        elseif strcmp(parameter,'fextra')
-
-            V_fextra_tots{end+1} = V_SANDI_tot;
-        end
-    end
+%
+if strcmp(energy,'CMRO_2')
+    V_energy_tots=V_CMRO2_tots;
+    energy_unit_of_measure='(\mumol/100g/min)';
+else
+    V_energy_tots=V_CBF_tots;
+    energy_unit_of_measure='(ml/100g/min)';
 end
 
-threasholds = 0.1:0.1:1;
-index = 1:1:numel(threasholds);
+if strcmp(micro_parameter,'Rsoma')
+    micro_parameter_unit_of_measure='(\mum)';
+elseif strcmp(micro_parameter,'fsoma') || strcmp(micro_parameter,'fneurite')
+    micro_parameter_unit_of_measure='';
+end
 
-plot_subjs_corr(threasholds, 0.5, V_GM_tot, V_fsoma_tots, V_rsoma_tots, V_CBF_tots, n_subjs, 'subsample');
 
+%
 
+% n_subjs=12;
+% 
+% V_CBF_tots={};
+% 
+% for i = 1:1:n_subjs%lst
+%     if i < 10
+%         i=num2str(i);
+%         img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/CBF0toMNI/sub-00',i,'_task-bh_run-01_dexi_volreg_asl_topup_CBF_map_2MNI2mm.nii.gz');
+%     else
+%         i=num2str(i);
+%         img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/CBF0toMNI/sub-0',i,'_task-bh_run-01_dexi_volreg_asl_topup_CBF_map_2MNI2mm.nii.gz');
+%     end
+%     Vhdr = spm_vol(img_path_CBF);
+%     V_CBF_tot = spm_read_vols(Vhdr);
+% %     figure, imagesc(rot90(squeeze(V_CBF_tot(30,:,:)))) 
+% %     imshow(rot90(squeeze(V(30,:,:))),[])
+%     V_CBF_tots{end+1} = V_CBF_tot;
+% end
+% 
+% 
+% 
+% V_fsoma_tots={};
+% 
+% V_fneurite_tots={};
+% 
+% V_fextra_tots={};
+% 
+% V_Din_tots={};
+% 
+% V_De_tots={};
+% 
+% %parameter = 'De';
+% 
+% 
+% 
+% V_rsoma_tots={};
+% 
+% parameters = {'Rsoma', 'fsoma','fneurite','Din','De','fextra'};
+% 
+% for j = 1:length(parameters)
+%     parameter = parameters{j};
+%     for i = 1:1:n_subjs%lst
+%         if i < 10
+% 
+%             i=num2str(i);
+%             img_path_SANDI = strcat('/media/nas_rete/Vitality/maps2MNI/sub-00',i,'_run-01_SANDI-fit_',parameter,'_2MNI.nii.gz');
+%         else
+% 
+%             i=num2str(i);
+%             img_path_SANDI = strcat('/media/nas_rete/Vitality/maps2MNI/sub-0',i,'_run-01_SANDI-fit_',parameter,'_2MNI.nii.gz');
+%         end
+%         Vhdr = spm_vol(img_path_SANDI);
+%         V_SANDI_tot = spm_read_vols(Vhdr);
+% 
+%         if strcmp(parameter,'Rsoma')
+% 
+%             V_rsoma_tots{end+1} = V_SANDI_tot;
+% 
+%         elseif strcmp(parameter,'fsoma')
+% 
+%             V_fsoma_tots{end+1} = V_SANDI_tot;
+% 
+%         elseif strcmp(parameter,'fneurite')
+% 
+%             V_fneurite_tots{end+1} = V_SANDI_tot;
+%         
+%         elseif strcmp(parameter,'Din')
+% 
+%             V_Din_tots{end+1} = V_SANDI_tot;
+% 
+%         elseif strcmp(parameter,'De')
+% 
+%             V_De_tots{end+1} = V_SANDI_tot;
+% 
+%         elseif strcmp(parameter,'fextra')
+% 
+%             V_fextra_tots{end+1} = V_SANDI_tot;
+%         end
+%     end
+% end
+%V_rsoma_tots=V_SANDI_tots;
+cd('/media/nas_rete/Work_manuela/DWI_En_modeling_functions');
+%%%%%
+fig_scatter='on';
+fig_corr='on';
+fig_slices='off';%in order to have these plots, you need also fig_scatter='on'
+plot_subjs_corr(threasholds, index, V_GM_tot, V_fsoma_tots, V_SANDI_tots, V_energy_tots, ...
+    n_subjs, low_thr, 'subsample', V_fsoma_thr, micro_parameter,micro_parameter_unit_of_measure, ...
+    energy, energy_unit_of_measure, subsample_perc, fig_scatter,fig_corr, fig_slices);
+%you can substitute just one value like 0.5
+cd('/media/nas_rete/Work_manuela/DWI_En_modeling_results/250313_official')
 
-
+%INSERT THE GM PVE FOR EACH THR.
 
 
 %%  GLM voxel-wise 4
@@ -387,66 +510,64 @@ ylabel('Variance CBF','FontWeight','bold');
 
 %% regional correlation (all subjects) 7
 %load data
-%%%%%%%%%%%%%
-run='run-02';%CHANGE
+study='PRIN';
 %%%%%%%%%%%%%
 
-subjects = importdata(strcat('/media/nas_rete/Vitality/code/subjs_DWI.txt'));
+
+
+if strcmp(study,'Vitality')
+    subjects = importdata('/media/nas_rete/Vitality/code/subjs_DWI.txt');
+    run='run-01';%CHANGE
+    subjects([11,27])=[];
+elseif strcmp(study,'PRIN')
+    subjects=importdata('/media/nas_rete/PRINAntonello2022/BIDS/code/subjects_DWI.txt');
+elseif strcmp(study,'Cardiff')
+    subjects=importdata('/media/nas_rete/GLOVE_STUDY/DDC/scripts/subjects.txt');
+end
 
 V_CBF_tots={};
 V_CMRO2_tots={};
 V_SANDI_tots={};
 V_fsoma_tots={};
 
-
-%run2
-subjects([11,27])=[];
-
 n_subjs=length(subjects);
 
-% lst = 2:1:n_subjs;GLOVE
-% lst(lst==8) = [];
-% lst = 1:1:n_subjs;PRIN
-% lst(lst==2) = [];
+
+
 for i = 1:1:n_subjs %lst
 
     %if i < 10
 
         %i=num2str(i);
         subj=num2str(subjects{i});
+
+        %Vitality
+        if strcmp(study,'Vitality')
+
         img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/250101/CBF0toMNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CBF_map_2MNI2mm.nii.gz');        
         img_path_CMRO2 = strcat('/media/nas_rete/Vitality/maps2MNI/250101/CMRO20toMNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CMRO2_map_2MNI2mm.nii.gz');
         img_path_SANDI = strcat('/media/nas_rete/Vitality/maps2MNI/250101/SANDItoMNI/',subj,'_',run,'_SANDI-fit_Rsoma_2MNI2mm.nii.gz');
         img_path_fsoma = strcat('/media/nas_rete/Vitality/maps2MNI/250101/SANDItoMNI/',subj,'_',run,'_SANDI-fit_fsoma_2MNI2mm.nii.gz');
-         
-        %img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/CBF0toMNI/sub-00',i,'_task-bh_',run,'_dexi_volreg_asl_topup_CBF_map_2MNI2mm.nii.gz');
-        %img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/CMRO20/sub-00',i,'_task-bh_run-01_dexi_volreg_asl_topup_CMRO2_map_on_MNI2mm.nii.gz');
-        %img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/CBF0toMNIGrubb038/sub-00',i,'_run-01_bh_CBF0_2MNI2mm.nii.gz');
-        %img_path_CBF = strcat('/media/nas_rete/GLOVE_STUDY/DDC/registered/CBF2MNI-resting/pil00',i,'_resting_task_CBF_map_2MNI.nii.gz');
-        %img_path_CBF = strcat('/storage/shared/PRINAntonello2022/BIDS/derivatives/sub-0',i,'/perf/CBF0_2MNI/sub-0',i,'_ep2d_dexi_pc_v1_rs_CBF0_2MNI.nii.gz');
-        %img_path_SANDI = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-00',i,'_',run,'_SANDI-fit_Rsoma_2MNI2mm.nii.gz');
-        %img_path_SANDI = strcat('/media/nas_rete/Vitality/maps2MNI/sub-00',i,'_run-01_SANDI-fit_Rsoma_2MNI.nii.gz');
-        %img_path_SANDI = strcat('/media/nas_rete/GLOVE_STUDY/DDC/registered/SANDI/pil00',i,'_resting_SANDI-fit_Rsoma.nii.gz');
-        %img_path_SANDI = strcat('/storage/shared/PRINAntonello2022/BIDS/derivatives/sub-0',i,'/dwi/SANDI_2MNI/sub-0',i,'_Rsoma_SANDI-fit_2MNI.nii.gz');
-        %img_path_fsoma = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-00',i,'_',run,'_SANDI-fit_fsoma_2MNI2mm.nii.gz');
- 
-    %else
 
-        %i=num2str(i);
-        %img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/CBF0toMNI/sub-0',i,'_task-bh_',run,'_dexi_volreg_asl_topup_CBF_map_2MNI2mm.nii.gz');
-        %img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/CMRO20/sub-0',i,'_task-bh_run-01_dexi_volreg_asl_topup_CMRO2_map_on_MNI2mm.nii.gz');
-        %img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/CBF0toMNIGrubb038/sub-0',i,'_run-01_bh_CBF0_2MNI2mm.nii.gz');
-        %img_path_CBF = strcat('/media/nas_rete/GLOVE_STUDY/DDC/registered/CBF2MNI-resting/pil0',i,'_resting_task_CBF_map_2MNI.nii.gz');
-        %img_path_CBF = strcat('/storage/shared/PRINAntonello2022/BIDS/derivatives/sub-',i,'/perf/CBF0_2MNI/sub-',i,'_ep2d_dexi_pc_v1_rs_CBF0_2MNI.nii.gz');
-        
-        %img_path_SANDI = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-0',i,'_',run,'_SANDI-fit_Rsoma_2MNI2mm.nii.gz');
-        %img_path_SANDI = strcat('/media/nas_rete/Vitality/maps2MNI/sub-0',i,'_run-01_SANDI-fit_Rsoma_2MNI.nii.gz');
-        %img_path_SANDI = strcat('/media/nas_rete/GLOVE_STUDY/DDC/registered/SANDI/pil0',i,'_resting_SANDI-fit_Rsoma.nii.gz');
-        %img_path_SANDI = strcat('/storage/shared/PRINAntonello2022/BIDS/derivatives/sub-',i,'/dwi/SANDI_2MNI/sub-',i,'_Rsoma_SANDI-fit_2MNI.nii.gz');
-        %img_path_fsoma = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-0',i,'_',run,'_SANDI-fit_fsoma_2MNI2mm.nii.gz');
+        %PRIN
+        elseif strcmp(study,'PRIN')
+
+        img_path_CBF = strcat('/media/nas_rete/PRINAntonello2022/BIDS/derivatives/',subj,'/perf/CBF0_2MNI/',subj,'_ep2d_dexi_pc_v1_rs_CBF0_2MNI.nii.gz');        
+%         img_path_CMRO2 = strcat('');
+        img_path_SANDI = strcat('/media/nas_rete/PRINAntonello2022/BIDS/derivatives/',subj,'/dwi/SANDI_2MNI/',subj,'_Rsoma_SANDI-fit_2MNI.nii.gz');
+        img_path_fsoma = strcat('/media/nas_rete/PRINAntonello2022/BIDS/derivatives/',subj,'/dwi/SANDI_2MNI/',subj,'_fsoma_SANDI-fit_2MNI.nii.gz');
+  
+        %Cardiff      
+        elseif strcmp(study,'Cardiff')
+
+        img_path_CBF = strcat('/media/nas_rete/GLOVE_STUDY/DDC/registered/CBF2MNI-resting/',subj,'_resting_task_CBF_map_2MNI.nii.gz');        
+%         img_path_CMRO2 = strcat('');
+        img_path_SANDI = strcat('/media/nas_rete/GLOVE_STUDY/DDC/derivatives/',subj,'/resting/dwi/SANDI_Output_2MNI/',subj,'_resting_SANDI-fit_Rsoma_2MNI.nii.gz');
+        img_path_fsoma = strcat('/media/nas_rete/GLOVE_STUDY/DDC/derivatives/',subj,'/resting/dwi/SANDI_Output_2MNI/',subj,'_resting_SANDI-fit_fsoma_2MNI.nii.gz');
+
+        end
 
 
-    %end
 
     Vhdr = spm_vol(img_path_CBF);
     V_CBF_tot = spm_read_vols(Vhdr);
@@ -454,11 +575,11 @@ for i = 1:1:n_subjs %lst
 %     imshow(rot90(squeeze(V(30,:,:))),[])
     V_CBF_tots{end+1} = V_CBF_tot;
 
-    Vhdr = spm_vol(img_path_CMRO2);
-    V_CMRO2_tot = spm_read_vols(Vhdr);
-%     figure, imagesc(rot90(squeeze(V_CBF_tot(30,:,:)))) 
-%     imshow(rot90(squeeze(V(30,:,:))),[])
-    V_CMRO2_tots{end+1} = V_CMRO2_tot;
+%     Vhdr = spm_vol(img_path_CMRO2);
+%     V_CMRO2_tot = spm_read_vols(Vhdr);
+% %     figure, imagesc(rot90(squeeze(V_CBF_tot(30,:,:)))) 
+% %     imshow(rot90(squeeze(V(30,:,:))),[])
+%     V_CMRO2_tots{end+1} = V_CMRO2_tot;
 
     Vhdr = spm_vol(img_path_SANDI);
     V_SANDI_tot = spm_read_vols(Vhdr);
@@ -479,11 +600,11 @@ v='CBF';%CHANGE
 
 
 if strcmp(v,'CBF')
-    low_thr=5;
-    up_thr=100;
-else
-    low_thr=50;
-    up_thr=200;
+    low_thr=1;% remove zeros outside brain image
+    up_thr=10000000000000000000000;%100;
+elseif strcmp(v,'CMRO2')
+    low_thr=1;%50;
+    up_thr=10000000000000000000000;%200;
 end
 %%%%%%%%%%%%%
 
@@ -657,9 +778,13 @@ end
 %%
 %regional corr for each subj
 
-mean_with_subjs_corr=mean(corr_for_each_subj);
+mean_with_subjs_corr=nanmean(corr_for_each_subj);%why do we have NaNs?
 [h,p,ci,stats]=ttest(atanh(corr_for_each_subj));
 
+mean_corr=round(mean_with_subjs_corr,2);
+mean_corr=num2str(mean_corr);
+
+pvalue=num2str(round(p,2));
 % corr_PRIN_for_each_subj_12subjs=corr_for_each_subj;
 % pvalues_PRIN_for_each_subj_12subjs=pvalue_for_each_subj;
 
@@ -669,15 +794,25 @@ s=scatter(1:n_subjs,corr_for_each_subj,45);
 s.MarkerEdgeColor = 'b';
 s.MarkerFaceColor = [0 0.5 0.5];
 yline(0,'--');
-mean_corr=round(mean_with_subjs_corr,2);
-mean_corr=num2str(mean_corr);
 txt = {strcat('r = ',mean_corr,'*')};%,strcat('p-value = ',p_value_str)
 %annotation('textbox',[.6,.2,.30,.13], 'String', txt, 'FontWeight', 'Bold','FontSize',12);
-text(22,0.4,txt,'FontWeight', 'Bold','FontSize',12);
+text(5,0.15,txt,'FontWeight', 'Bold','FontSize',12);
 ylabel('r','FontSize',15,'FontWeight','bold');
 xlabel('Subjects','FontSize',15,'FontWeight','bold');
 set(get(gca, 'XAxis'), 'FontWeight', 'bold');
 set(get(gca, 'YAxis'), 'FontWeight', 'bold');
+
+figure, 
+s=histogram(corr_for_each_subj,'FaceAlpha',1);
+s.FaceColor="b";
+xlabel('correlation coefficient','FontWeight','bold','FontSize',15);
+ylabel('Counts (# subjects)','FontWeight','bold','FontSize',15);
+ylim([0,8]);
+xline(0,'--','LineWidth',3);
+txt = {strcat('r = ',mean_corr,'*')};
+text(-0.3,7,txt, 'FontWeight', 'bold','FontSize',15);
+grid on
+
 
 %%
 % mean regional corr over all subjs
@@ -826,6 +961,11 @@ end
 set(get(gca, 'XAxis'), 'FontWeight', 'bold');
 set(get(gca, 'YAxis'), 'FontWeight', 'bold');
 set(gca,'box','off')
+x0=400;
+y0=400;
+width=550;
+height=450;
+set(gcf,'position',[x0,y0,width,height])
 grid on
 % path_main = '/media/nas_rete/Work_manuela/DWI_En_modeling/main';
 % path_to_image=strcat(path_main,'/regional_corr/','regional_corr_Rsoma_CBF_multisubjects_Vitality_PVE05_ERR_intervalincrease.png');
@@ -883,6 +1023,7 @@ for n = 1:n_boots
     mean_energy(idx_low_n_voxels)=[];
     var_SANDI(idx_low_n_voxels)=[];
     
+    %remove regions with high coefficient of variation
     idx_high_SE=find(var_SANDI>prctile(var_SANDI,75));
     labels(idx_high_SE)=[];
     mean_SANDI(idx_high_SE)=[];
@@ -896,7 +1037,8 @@ end
 
 
 
-%%
+%% save data (used for reproducibility study)
+
 labels_run2_CBF=labels;
 mean_SANDI_run2_CBF=mean_SANDI;
 mean_energy_run2_CBF=mean_energy;
@@ -905,12 +1047,9 @@ SE_energy_run2_CBF=SE_energy;
 reshaped_medians_energy_run2_CBF=reshaped_medians_energy;
 reshaped_medians_SANDI_run2_CBF=reshaped_medians_SANDI;
 
-%% clustering regional scatterplot CMRO2 vs Rsoma 8
+%% clustering regional scatterplot CBF vs Rsoma 8
 
-z_rsoma = zscore(mean_SANDI);
-z_energy = zscore(mean_energy);
 
-X=[z_rsoma;z_energy].';
 %%
 %clusters made by hand
 
@@ -927,7 +1066,7 @@ X=[z_rsoma;z_energy].';
 % X(116:135,2)=20+randn(20,1);
 % X(136:155,1)=-30+randn(20,1);
 % X(136:155,2)=30+randn(20,1);
-
+X=[];
 % %5 clusters for positive correlation
 X(1:35,1)=-10+randn(35,1);
 X(1:35,2)=-10+randn(35,1);
@@ -939,6 +1078,9 @@ X(116:135,1)=20+randn(20,1);
 X(116:135,2)=20+randn(20,1);
 X(136:155,1)=30+randn(20,1);
 X(136:155,2)=30+randn(20,1);
+%adding a cluster outside the positive straightline
+% X(156:175,1)=30+randn(20,1);
+% X(156:175,2)=-10+randn(20,1);
 
 figure, scatter(X(:,1),X(:,2))
 
@@ -988,41 +1130,43 @@ for j = n_clusters
 
 end
 %% k-means clustering (changing X)
+%first run "bootstrapped subjects" section
+
 slopes_n_boots=[];
 slopes=[];
 
 all_ks=[];
-n_boots=42;
+n_boots=142;
 for n=1:n_boots
-    z_rsoma = zscore(raws_mean_SANDI(n,:));
-    z_energy = zscore(raws_mean_energy(n,:));
+%     z_rsoma = zscore(raws_mean_SANDI(n,:));
+%     z_energy = zscore(raws_mean_energy(n,:));
+% 
+%     X=[z_rsoma;z_energy].';
+% considering hand made samples
+    k_one_run=[];
+    new_Xs=[];
+    rng(n)
+    for j = 1:length(X(:,1))
+    
+    k=randperm(length(X(:,1)),1);
+    k_one_run(end+1)=k;
+    
+    new_X=X(k,:);
 
-    X=[z_rsoma;z_energy].';
-% % considering hand made samples
-%     k_one_run=[];
-%     new_Xs=[];
-%     rng(n)
-%     for j = 1:length(X(:,1))
-%     
-%     k=randperm(length(X(:,1)),1);
-%     k_one_run(end+1)=k;
-%     
-%     new_X=X(k,:);
-% 
-% 
-%     new_Xs(j,:)=new_X;
-%     end
-%     all_ks(n,:)=k_one_run;
-% %     figure, hist(all_ks(n,:));
-% %
-    n_clusters=1:length(X);
+
+    new_Xs(j,:)=new_X;
+    end
+    all_ks(n,:)=k_one_run;
+%     figure, hist(all_ks(n,:));
+%
+    n_clusters=2:length(X);
 
     slopes=[];
     n
     for i=n_clusters
         %i
         rng(42);
-        [idx,C]=kmeans(X,i);
+        [idx,C]=kmeans(new_Xs,i);%X
         yfit=polyfit(C(:,1),C(:,2),1);
         slope=yfit(1);
         slopes(end+1)=slope;
@@ -1034,12 +1178,18 @@ end
 
 %% k-means clustering changing seed
 
+z_rsoma = zscore(mean_SANDI);
+z_energy = zscore(mean_energy);
+
+X=[z_rsoma;z_energy].';
+
+%%
 var_1=[];
 var_2=[];
 
 n_clusters=2:length(X);
-%idx_for_n_clusters=[]; %in case yoy run it once
-n_clusterings=42;
+%idx_for_n_clusters=[]; %in case you run it once
+n_clusterings=142;
 
 slopes_n_kmeans=[];
 slopes=[];
@@ -1453,7 +1603,8 @@ for k=1:n_clusterings
 end
 %%
 
-%using variance of centroids
+%using variance of centroids ("failed" method)
+
 % var_1_perc=var_1/sum(var_1);
 % var_2_perc=var_2/sum(var_2);
 % figure, 
@@ -1489,14 +1640,26 @@ ax.XAxis.FontSize = 12;
 ax.YAxis.FontSize = 12;
 grid on
 
-mean_slopes=mean(slopes_n_boots,1);%slopes_n_kmeans
+%%
+%slopes vs number of clusters
+
+method='n_kmeans';
+if strcmp(method,'n_kmeans')
+    slopes=slopes_n_kmeans;
+    n=n_clusterings;
+elseif strcmp(method,'n_boots')
+    slopes=slopes_n_boots;
+    n=n_boots;
+end
+mean_slopes=mean(slopes,1);%slopes_n_kmeans
 
 figure,
-for i = 1:n_boots%n_clusterings
-plot(slopes_n_boots(i,:));%slopes_n_kmeans
+for i = 1:n
+plot(slopes(i,:));
 xlabel('# clusters','FontSize',15,'FontWeight','bold');
 ylabel('GLM slope','FontSize',15,'FontWeight','bold');
 % xline(5,'--');
+% xline(6,'--');
 hold on
 end
 hold on
@@ -2446,6 +2609,11 @@ text(0.40,67,txt, 'FontWeight', 'bold','FontSize',12);
 set(get(gca, 'XAxis'), 'FontWeight', 'bold');
 set(get(gca, 'YAxis'), 'FontWeight', 'bold');
 set(gca,'box','off')
+x0=400;
+y0=400;
+width=550;
+height=450;
+set(gcf,'position',[x0,y0,width,height]);
 grid on
 
 
