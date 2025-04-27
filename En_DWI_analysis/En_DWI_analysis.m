@@ -30,11 +30,11 @@
 %Load GM 
 img_path_GM = '/storage/shared/Atlas/atlas_GM_on_MNI152_T1_2mm.nii.gz'; %GM resampled on T1 2mm
 %atlas_GM resampled on SANDI and CBF dimensions
-Vhdr = spm_vol(img_path_GM);
-V_GM_tot = spm_read_vols(Vhdr); 
+Vhdr_GM = spm_vol(img_path_GM);
+V_GM_tot = spm_read_vols(Vhdr_GM); 
 
 %Loading atlas
-img_path_atlas='/storage/shared/Atlas/AAL3v1_2mm.nii.gz';
+img_path_atlas='/storage/shared/Atlas/AAL3v1_2mm_resampled.nii.gz';
 Vhdr = spm_vol(img_path_atlas);
 V_atlas_tot = spm_read_vols(Vhdr);
 
@@ -112,7 +112,7 @@ n_subjs=length(subjects);
 
 %%%%%%%%%%%%%%%%%%%%%PARAMETERS TO SET
 micro_parameter='fneurite';
-energy='CBF'; %'CBF'
+energy='CMRO_2'; %'CBF'
 %
 
 
@@ -184,7 +184,6 @@ for i = 1:1:n_subjs %lst
 
 
 end
-
 
 %
 if strcmp(energy,'CMRO_2')
@@ -508,9 +507,12 @@ ylabel('Variance CBF','FontWeight','bold');
 
 
 
-%% regional correlation (all subjects) 7
+%% GM and regional correlation (all subjects) 7
 %load data
-study='PRIN';
+study='Vitality';
+micro_parameter='fsoma';
+unit_of_measure='';%'(\mum)';
+energy_parameter='CBF';
 %%%%%%%%%%%%%
 
 
@@ -518,7 +520,7 @@ study='PRIN';
 if strcmp(study,'Vitality')
     subjects = importdata('/media/nas_rete/Vitality/code/subjs_DWI.txt');
     run='run-01';%CHANGE
-    subjects([11,27])=[];
+    %subjects([11,27])=[];
 elseif strcmp(study,'PRIN')
     subjects=importdata('/media/nas_rete/PRINAntonello2022/BIDS/code/subjects_DWI.txt');
 elseif strcmp(study,'Cardiff')
@@ -538,48 +540,58 @@ for i = 1:1:n_subjs %lst
 
     %if i < 10
 
-        %i=num2str(i);
-        subj=num2str(subjects{i});
+    %i=num2str(i);
+    subj=num2str(subjects{i});
 
-        %Vitality
-        if strcmp(study,'Vitality')
+    %Vitality
+    if strcmp(study,'Vitality')
 
-        img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/250101/CBF0toMNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CBF_map_2MNI2mm.nii.gz');        
-        img_path_CMRO2 = strcat('/media/nas_rete/Vitality/maps2MNI/250101/CMRO20toMNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CMRO2_map_2MNI2mm.nii.gz');
-        img_path_SANDI = strcat('/media/nas_rete/Vitality/maps2MNI/250101/SANDItoMNI/',subj,'_',run,'_SANDI-fit_Rsoma_2MNI2mm.nii.gz');
-        img_path_fsoma = strcat('/media/nas_rete/Vitality/maps2MNI/250101/SANDItoMNI/',subj,'_',run,'_SANDI-fit_fsoma_2MNI2mm.nii.gz');
+        %uncorrected images
+        %path='/media/nas_rete/Vitality/maps2MNI/250101/CBF0toMNI/';%CMRO20toMNI
+        %corrected images
+        if strcmp(energy_parameter,'CBF')
+            img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/250418_corrected_for_RIM/CBF02MNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CBF_map_2MNI.nii.gz');
+        else
+
+            img_path_CMRO2 = strcat('/media/nas_rete/Vitality/registered/perf/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CMRO2_map.nii.gz'); %_2MNI2mm
+        end
+        img_path_SANDI = strcat('/media/nas_rete/Vitality/registered/SANDI/',subj,'_',run,'_SANDI-fit_',micro_parameter,'_2mm.nii.gz');
+        img_path_fsoma = strcat('/media/nas_rete/Vitality/registered/SANDI/',subj,'_',run,'_SANDI-fit_fsoma_2mm.nii.gz');
 
         %PRIN
-        elseif strcmp(study,'PRIN')
+    elseif strcmp(study,'PRIN')
 
-        img_path_CBF = strcat('/media/nas_rete/PRINAntonello2022/BIDS/derivatives/',subj,'/perf/CBF0_2MNI/',subj,'_ep2d_dexi_pc_v1_rs_CBF0_2MNI.nii.gz');        
-%         img_path_CMRO2 = strcat('');
-        img_path_SANDI = strcat('/media/nas_rete/PRINAntonello2022/BIDS/derivatives/',subj,'/dwi/SANDI_2MNI/',subj,'_Rsoma_SANDI-fit_2MNI.nii.gz');
+        img_path_CBF = strcat('/media/nas_rete/PRINAntonello2022/BIDS/derivatives/',subj,'/perf/CBF0_2MNI/',subj,'_ep2d_dexi_pc_v1_rs_CBF0_2MNI.nii.gz');
+        %         img_path_CMRO2 = strcat('');
+        img_path_SANDI = strcat('/media/nas_rete/PRINAntonello2022/BIDS/derivatives/',subj,'/dwi/SANDI_2MNI/',subj,'_',micro_parameter,'_SANDI-fit_2MNI.nii.gz');
         img_path_fsoma = strcat('/media/nas_rete/PRINAntonello2022/BIDS/derivatives/',subj,'/dwi/SANDI_2MNI/',subj,'_fsoma_SANDI-fit_2MNI.nii.gz');
-  
-        %Cardiff      
-        elseif strcmp(study,'Cardiff')
 
-        img_path_CBF = strcat('/media/nas_rete/GLOVE_STUDY/DDC/registered/CBF2MNI-resting/',subj,'_resting_task_CBF_map_2MNI.nii.gz');        
-%         img_path_CMRO2 = strcat('');
-        img_path_SANDI = strcat('/media/nas_rete/GLOVE_STUDY/DDC/derivatives/',subj,'/resting/dwi/SANDI_Output_2MNI/',subj,'_resting_SANDI-fit_Rsoma_2MNI.nii.gz');
+        %Cardiff
+    elseif strcmp(study,'Cardiff')
+
+        img_path_CBF = strcat('/media/nas_rete/GLOVE_STUDY/DDC/registered/CBF2MNI-resting/',subj,'_resting_task_CBF_map_2MNI.nii.gz');
+        %         img_path_CMRO2 = strcat('');
+        img_path_SANDI = strcat('/media/nas_rete/GLOVE_STUDY/DDC/derivatives/',subj,'/resting/dwi/SANDI_Output_2MNI/',subj,'_resting_SANDI-fit_',micro_parameter,'_2MNI.nii.gz');
         img_path_fsoma = strcat('/media/nas_rete/GLOVE_STUDY/DDC/derivatives/',subj,'/resting/dwi/SANDI_Output_2MNI/',subj,'_resting_SANDI-fit_fsoma_2MNI.nii.gz');
 
-        end
+    end
 
 
+    if strcmp(energy_parameter,'CBF')
 
-    Vhdr = spm_vol(img_path_CBF);
-    V_CBF_tot = spm_read_vols(Vhdr);
-%     figure, imagesc(rot90(squeeze(V_CBF_tot(30,:,:)))) 
-%     imshow(rot90(squeeze(V(30,:,:))),[])
-    V_CBF_tots{end+1} = V_CBF_tot;
+        Vhdr = spm_vol(img_path_CBF);
+        V_CBF_tot = spm_read_vols(Vhdr);
+        %     figure, imagesc(rot90(squeeze(V_CBF_tot(30,:,:))))
+        %     imshow(rot90(squeeze(V(30,:,:))),[])
+        V_CBF_tots{end+1} = V_CBF_tot;
+    else
 
-%     Vhdr = spm_vol(img_path_CMRO2);
-%     V_CMRO2_tot = spm_read_vols(Vhdr);
-% %     figure, imagesc(rot90(squeeze(V_CBF_tot(30,:,:)))) 
-% %     imshow(rot90(squeeze(V(30,:,:))),[])
-%     V_CMRO2_tots{end+1} = V_CMRO2_tot;
+        Vhdr = spm_vol(img_path_CMRO2);
+        V_CMRO2_tot = spm_read_vols(Vhdr);
+        %     figure, imagesc(rot90(squeeze(V_CBF_tot(30,:,:))))
+        %     imshow(rot90(squeeze(V(30,:,:))),[])
+        V_CMRO2_tots{end+1} = V_CMRO2_tot;
+    end
 
     Vhdr = spm_vol(img_path_SANDI);
     V_SANDI_tot = spm_read_vols(Vhdr);
@@ -593,29 +605,146 @@ for i = 1:1:n_subjs %lst
 end
 
 %% 
-%process data
+%select threshold on energy parameters maps
 %%%%%%%%%%%%%
-v='CBF';%CHANGE
 
 
 
-if strcmp(v,'CBF')
+
+if strcmp(energy_parameter,'CBF')
     low_thr=1;% remove zeros outside brain image
-    up_thr=10000000000000000000000;%100;
-elseif strcmp(v,'CMRO2')
+    %up_thr=10000000000000000000000;%100;
+elseif strcmp(energy_parameter,'CMRO2')
     low_thr=1;%50;
-    up_thr=10000000000000000000000;%200;
+    %up_thr=10000000000000000000000;%200;
 end
 %%%%%%%%%%%%%
 
 
 
-if strcmp(v,'CBF')
+if strcmp(energy_parameter,'CBF')
     V_energy_tots=V_CBF_tots;
 else
     V_energy_tots=V_CMRO2_tots;
 end
 
+%% GM
+medians_energy=[];
+medians_SANDI=[];
+SEs_energy=[];
+SEs_SANDI=[];
+
+V_GM=V_GM_tot;
+V_GM(V_GM>0.5)=1;
+V_GM(V_GM<1)=0;
+for i = 1:1:n_subjs %here we loose information about the real number of subj
+
+    V_energy_tot = V_energy_tots{i};
+    V_SANDI_tot = V_SANDI_tots{i};
+    V_fsoma_tot = V_fsoma_tots{i};
+
+    V_fsoma_tot(V_fsoma_tot>0.15)=1;
+    V_fsoma_tot(V_fsoma_tot<1)=0;
+
+    V_energy = V_energy_tot;
+    V_SANDI = V_SANDI_tot;
+
+    V_energy_masked = V_energy.*V_fsoma_tot.*V_GM;
+    V_SANDI_masked = V_SANDI.*V_fsoma_tot.*V_GM;
+
+    V_energy_masked = V_energy_masked(:);
+    V_SANDI_masked = V_SANDI_masked(:);
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    indices_energy = [];
+    for ii = 1:numel(V_energy_masked)
+        if V_energy_masked(ii)<low_thr %|| V_energy_masked(ii)>up_thr
+            %v_CBF_reduced(ii)=[];
+            indices_energy(end+1)=ii;
+        end
+    end
+
+
+    disp(strcat('Processing subj',num2str(i)))
+
+    %         indices = cat(2, indices_rsoma_zeros, indices_energy);
+    %         indices_unique = unique(indices);
+    %         %fsoma
+    indices_unique = unique(indices_energy);
+
+    v_energy_masked=V_energy_masked;
+    v_SANDI_masked=V_SANDI_masked;
+
+    v_energy_masked(indices_unique)=[];
+    v_SANDI_masked(indices_unique)=[];
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+    median_energy = median(v_energy_masked);
+    median_SANDI = median(v_SANDI_masked);
+
+    medians_energy(end+1) = median_energy;
+    medians_SANDI(end+1) = median_SANDI;
+
+%     SE_energy=nanstd(V_energy_masked);
+%     SE_SANDI=nanstd(V_SANDI_masked);
+
+%     SEs_energy(end+1) = SE_energy/sqrt(numel(SE_energy));
+%     SEs_SANDI(end+1) = SE_SANDI/sqrt(numel(SE_energy));
+
+    toc
+end
+%%
+[r,p] = corrcoef(medians_energy, medians_SANDI, 'rows','complete');
+corr_coef = round(r(2),2);
+p_value = p(2);
+corr_coef_str = num2str(corr_coef);
+p_value_str = num2str(p_value);
+
+
+if strcmp(energy_parameter,'CBF')
+    dependent_parameter='CBF(ml/100g/min)';
+else
+    dependent_parameter='CMRO_2(\mumol/100g/min)';
+end
+
+P = polyfit(medians_SANDI,medians_energy,1);
+yfit = P(1)*medians_SANDI+P(2);
+
+figure, 
+s = scatter(medians_SANDI,medians_energy);
+%s = errorbar(medians_SANDI, medians_energy, SEs_energy, SEs_energy, SEs_SANDI, SEs_SANDI,'o');
+%hold on
+%plot(medians_SANDI,yfit,'--','LineWidth',3,'Color',"#000000");
+xlabel(strcat(micro_parameter, unit_of_measure),'FontSize',15,'FontWeight','bold');
+ylabel(dependent_parameter,'FontSize',15,'FontWeight','bold');
+s.LineWidth = 0.6;
+s.MarkerEdgeColor = 'b';
+s.MarkerFaceColor = [0 0.5 0.5];
+txt = {strcat('r = ',corr_coef_str,'')};%,strcat('p-value = ',p_value_str)
+if strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'Rsoma')
+    text(13.8,60,txt, 'FontWeight', 'bold','FontSize',12);
+elseif strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'fsoma')
+    text(0.39,60,txt, 'FontWeight', 'bold','FontSize',12);
+elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'Rsoma')
+    text(13.8,140,txt, 'FontWeight', 'bold','FontSize',12);
+elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'fsoma')
+    text(0.39,140,txt, 'FontWeight', 'bold','FontSize',12);
+end
+set(get(gca, 'XAxis'), 'FontWeight', 'bold');
+set(get(gca, 'YAxis'), 'FontWeight', 'bold');
+set(gca,'box','off')
+x0=400;
+y0=400;
+width=550;
+height=450;
+set(gcf,'position',[x0,y0,width,height])
+grid on
+
+%% regional 
 %plot_regional_subjs_corr
 regions = unique(V_atlas_tot(:));
 n_regions = numel(regions);
@@ -698,7 +827,7 @@ for i = 1:1:n_subjs %here we loose information about the real number of subj
 
         indices_energy = [];
         for ii = 1:numel(V_energy_masked)
-            if V_energy_masked(ii)<low_thr || V_energy_masked(ii)>up_thr
+            if V_energy_masked(ii)<low_thr %|| V_energy_masked(ii)>up_thr
                 %v_CBF_reduced(ii)=[];
                 indices_energy(end+1)=ii;
             end
@@ -775,11 +904,18 @@ end
 % toc
 
 
+
 %%
 %regional corr for each subj
 
 mean_with_subjs_corr=nanmean(corr_for_each_subj);%why do we have NaNs?
 [h,p,ci,stats]=ttest(atanh(corr_for_each_subj));
+
+if strcmp(micro_parameter,'fsoma')
+    corr_for_each_subj_fsoma=corr_for_each_subj;
+elseif strcmp(micro_parameter,'Rsoma')
+    corr_for_each_subj_Rsoma=corr_for_each_subj;
+end
 
 mean_corr=round(mean_with_subjs_corr,2);
 mean_corr=num2str(mean_corr);
@@ -788,32 +924,44 @@ pvalue=num2str(round(p,2));
 % corr_PRIN_for_each_subj_12subjs=corr_for_each_subj;
 % pvalues_PRIN_for_each_subj_12subjs=pvalue_for_each_subj;
 
-%plot regional correlation for each subject
-figure, 
-s=scatter(1:n_subjs,corr_for_each_subj,45);
-s.MarkerEdgeColor = 'b';
-s.MarkerFaceColor = [0 0.5 0.5];
-yline(0,'--');
-txt = {strcat('r = ',mean_corr,'*')};%,strcat('p-value = ',p_value_str)
-%annotation('textbox',[.6,.2,.30,.13], 'String', txt, 'FontWeight', 'Bold','FontSize',12);
-text(5,0.15,txt,'FontWeight', 'Bold','FontSize',12);
-ylabel('r','FontSize',15,'FontWeight','bold');
-xlabel('Subjects','FontSize',15,'FontWeight','bold');
-set(get(gca, 'XAxis'), 'FontWeight', 'bold');
-set(get(gca, 'YAxis'), 'FontWeight', 'bold');
+% %plot regional correlation for each subject
+% figure, 
+% s=scatter(1:n_subjs,corr_for_each_subj,45);
+% s.MarkerEdgeColor = 'b';
+% s.MarkerFaceColor = [0 0.5 0.5];
+% yline(0,'--');
+% txt = {strcat('r = ',mean_corr,'*')};%,strcat('p-value = ',p_value_str)
+% %annotation('textbox',[.6,.2,.30,.13], 'String', txt, 'FontWeight', 'Bold','FontSize',12);
+% text(5,0.15,txt,'FontWeight', 'Bold','FontSize',12);
+% ylabel('r','FontSize',15,'FontWeight','bold');
+% xlabel('Subjects','FontSize',15,'FontWeight','bold');
+% set(get(gca, 'XAxis'), 'FontWeight', 'bold');
+% set(get(gca, 'YAxis'), 'FontWeight', 'bold');
 
 figure, 
-s=histogram(corr_for_each_subj,'FaceAlpha',1);
+s=histogram(corr_for_each_subj,'FaceAlpha',1,'BinWidth',0.07);
 s.FaceColor="b";
-xlabel('correlation coefficient','FontWeight','bold','FontSize',15);
+xlabel('correlation coefficient, r','FontWeight','bold','FontSize',15);
 ylabel('Counts (# subjects)','FontWeight','bold','FontSize',15);
-ylim([0,8]);
+ylim([0,20]);
 xline(0,'--','LineWidth',3);
-txt = {strcat('r = ',mean_corr,'*')};
-text(-0.3,7,txt, 'FontWeight', 'bold','FontSize',15);
+if p<0.05 && p>0.01    
+    txt = {strcat('\mu_r = ',mean_corr,'*')};
+elseif p<0.01 && p>0.001   
+    txt = {strcat('\mu_r = ',mean_corr,'**')};
+else
+    txt = {strcat('\mu_r = ',mean_corr,'***')};
+end
+
+text(0.5,7,txt, 'FontWeight', 'bold','FontSize',15);
 grid on
 
+%% Fisher transform
+z_corr_rsoma=atanh(corr_for_each_subj_Rsoma);
+z_corr_fsoma=atanh(corr_for_each_subj_fsoma);
+[mean,var]=tstat(z_corr_rsoma-z_corr_fsoma);
 
+[h,p]=ttest2(z_corr_rsoma,z_corr_fsoma);
 %%
 % mean regional corr over all subjs
 
@@ -821,6 +969,12 @@ grid on
 
 reshaped_medians_energy_tot=reshaped_medians_energy;
 reshaped_medians_SANDI_tot=reshaped_medians_SANDI;
+
+if strcmp(micro_parameter,'fsoma')
+    reshaped_medians_SANDI_tot_fsoma=reshaped_medians_SANDI_tot;
+elseif strcmp(micro_parameter,'Rsoma')
+    reshaped_medians_SANDI_tot_Rsoma=reshaped_medians_energy_tot;
+end
 
 mean_energy_tot = nanmean(reshaped_medians_energy_tot,1);%median
 mean_SANDI_tot = nanmean(reshaped_medians_SANDI_tot,1);
@@ -930,13 +1084,12 @@ p_value = p(2);
 corr_coef_str = num2str(corr_coef);
 p_value_str = num2str(p_value);
 
-parameter='Rsoma';
-unit_of_measure='(\mum)';
 
-if strcmp(v,'CBF')
+
+if strcmp(energy_parameter,'CBF')
     dependent_parameter='CBF(ml/100g/min)';
 else
-    dependent_parameter='CMRO2(\mumol/100g/min)';
+    dependent_parameter='CMRO_2(\mumol/100g/min)';
 end
 
 P = polyfit(mean_SANDI,mean_energy,1);
@@ -947,16 +1100,26 @@ figure,
 s = errorbar(mean_SANDI, mean_energy, SE_energy, SE_energy, SE_SANDI, SE_SANDI,'o');
 hold on
 plot(mean_SANDI,yfit,'--','LineWidth',3,'Color',"#000000");
-xlabel(strcat(parameter, unit_of_measure),'FontSize',15,'FontWeight','bold');
+xlabel(strcat(micro_parameter, unit_of_measure),'FontSize',15,'FontWeight','bold');
 ylabel(dependent_parameter,'FontSize',15,'FontWeight','bold');
 s.LineWidth = 0.6;
 s.MarkerEdgeColor = 'b';
 s.MarkerFaceColor = [0 0.5 0.5];
-txt = {strcat('r = ',corr_coef_str,'*')};%,strcat('p-value = ',p_value_str)
-if strcmp(v,'CBF')
-    text(12.5,60,txt, 'FontWeight', 'bold','FontSize',12);
+if p(2)<0.05 && p(2)>0.01    
+    txt = {strcat('r = ',corr_coef_str,'*')};
+elseif p(2)<0.01 && p(2)>0.001   
+    txt = {strcat('r = ',corr_coef_str,'**')};
 else
+    txt = {strcat('r = ',corr_coef_str,'***')};
+end
+if strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'Rsoma')
+    text(12.5,60,txt, 'FontWeight', 'bold','FontSize',12);
+elseif strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'fsoma')
+    text(0.19,60,txt, 'FontWeight', 'bold','FontSize',12);
+elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'Rsoma')
     text(12.5,140,txt, 'FontWeight', 'bold','FontSize',12);
+elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'fsoma')
+    text(0.19,140,txt, 'FontWeight', 'bold','FontSize',12);
 end
 set(get(gca, 'XAxis'), 'FontWeight', 'bold');
 set(get(gca, 'YAxis'), 'FontWeight', 'bold');
@@ -971,7 +1134,13 @@ grid on
 % path_to_image=strcat(path_main,'/regional_corr/','regional_corr_Rsoma_CBF_multisubjects_Vitality_PVE05_ERR_intervalincrease.png');
 % saveas(figure(2), path_to_image);
 
-fitglm(mean_SANDI, mean_energy)
+glm=fitglm(mean_SANDI, mean_energy);
+
+%% fit glm for one subject
+
+one_subj_fsoma=reshaped_medians_SANDI_tot_fsoma(1,:);
+one_subj_Rsoma=reshaped_medians_SANDI_tot_Rsoma(1,:);
+X=[one_subj_fsoma,one_subj_Rsoma];
 
 %% bootstrapped subjects
 n_boots=42;
@@ -1176,14 +1345,322 @@ for n=1:n_boots
     slopes_n_boots(n,:)=slopes;
 end
 
-%% k-means clustering changing seed
+%% Setup for k-means clustering
 
 z_rsoma = zscore(mean_SANDI);
 z_energy = zscore(mean_energy);
 
 X=[z_rsoma;z_energy].';
+%% k-means clustering
 
-%%
+n_clusters=1:length(X);
+idx_for_n_clusters=[]; 
+
+
+sse=[];
+
+
+for i=n_clusters
+    disp(strcat('Cluster',num2str(i)))
+    rng(k);%42
+    [idx,C]=kmeans(X,i);
+    diff=[];
+    for j=1:i
+
+        diff(idx==j,:)=X(idx==j,:)-repmat(C(j,:),sum(idx==j),1);
+        %compute the distance of each point from centroid.
+        % For the last one diff is with all zeros because each point is a centroid.
+    end
+    sse(i)=sum(sum(diff.^2));
+
+    idx_for_n_clusters(i,:)=idx;
+
+    C_1=C(:,1);
+    C_2=C(:,2);
+
+%     if i==1
+% 
+%         figure;
+%         s=plot(X(idx==1,1),X(idx==1,2),"o",'Color',"b",'MarkerSize',5,'MarkerFaceColor',"b");
+%         %s.MarkerEdgeColor = 'b';
+%         %s.MarkerFaceColor = [0 0.5 0.5];
+%         hold on
+%         plot(C_1,C_2,'kx',...
+%             'MarkerSize',15,'LineWidth',3)
+%         xlabel('Rsoma','FontSize',15,'FontWeight','bold');
+%         ylabel('CMRO2','FontSize',15,'FontWeight','bold');
+%         legend('Cluster 1','Centroids','Location','NW')
+%         title 'Cluster Assignments and Centroids'
+%         hold off
+% 
+%     elseif i==2
+% 
+%         figure;
+%         plot(X(idx==1,1),X(idx==1,2),"o",'Color',"r",'MarkerSize',10,'MarkerFaceColor',"r")
+%         hold on
+%         plot(X(idx==2,1),X(idx==2,2),"o",'Color',"b",'MarkerSize',10,'MarkerFaceColor',"b")
+%         hold on
+%         plot(C_1,C_2,'kx',...
+%             'MarkerSize',15,'LineWidth',3)
+%         xlabel('Rsoma','FontWeight','bold','FontSize',15);
+%         ylabel('CBF','FontWeight','bold','FontSize',15);
+%         legend('Cluster 1','Cluster 2','Centroids','Location','NW')
+%         title 'Cluster Assignments and Centroids'
+%         hold off
+% 
+%     elseif i==3
+%         figure;
+%         plot(X(idx==1,1),X(idx==1,2),"o",'Color',"r",'MarkerSize',5,'MarkerFaceColor',"r")
+%         hold on
+%         plot(X(idx==2,1),X(idx==2,2),"o",'Color',"b",'MarkerSize',5,'MarkerFaceColor',"b")
+%         hold on
+%         plot(X(idx==3,1),X(idx==3,2),"o",'Color',"g",'MarkerSize',5,'MarkerFaceColor',"g")
+%         hold on
+%         plot(C_1,C_2,'kx',...
+%             'MarkerSize',15,'LineWidth',3)
+%         legend('Cluster 1','Cluster 2','Cluster 3','Centroids','Location','NW')
+%         title 'Cluster Assignments and Centroids'
+%         hold off
+% 
+% 
+%     elseif i==4
+%         figure;
+%         plot(X(idx==1,1),X(idx==1,2),"o",'Color',"r",'MarkerSize',5,'MarkerFaceColor',"r")
+%         hold on
+%         plot(X(idx==2,1),X(idx==2,2),"o",'Color',"b",'MarkerSize',5,'MarkerFaceColor',"b")
+%         hold on
+%         plot(X(idx==3,1),X(idx==3,2),"o",'Color',"g",'MarkerSize',5,'MarkerFaceColor',"g")
+%         hold on
+%         plot(X(idx==4,1),X(idx==4,2),"o",'Color',"c",'MarkerSize',5,'MarkerFaceColor',"c")
+%         hold on
+%         plot(C_1,C_2,'kx',...
+%             'MarkerSize',15,'LineWidth',3)
+%         legend('Cluster 1','Cluster 2','Cluster 3', 'Cluster 4','Location','NW')
+%         title 'Cluster Assignments and Centroids'
+%         hold off
+% 
+% 
+%     elseif i==5
+% 
+%         figure;
+%         plot(X(idx==1,1),X(idx==1,2),"o",'Color',"r",'MarkerSize',5,'MarkerFaceColor',"r")
+%         hold on
+%         plot(X(idx==2,1),X(idx==2,2),"o",'Color',"b",'MarkerSize',5,'MarkerFaceColor',"b")
+%         hold on
+%         plot(X(idx==3,1),X(idx==3,2),"o",'Color',"g",'MarkerSize',5,'MarkerFaceColor',"g")
+%         hold on
+%         plot(X(idx==4,1),X(idx==4,2),"o",'Color',"c",'MarkerSize',5,'MarkerFaceColor',"c")
+%         hold on
+%         plot(X(idx==5,1),X(idx==5,2),"o",'Color',"m",'MarkerSize',5,'MarkerFaceColor',"m")
+%         hold on
+%         plot(C_1,C_2,'kx',...
+%             'MarkerSize',15,'LineWidth',3)
+%         legend('Cluster 1','Cluster 2','Cluster 3', 'Cluster 4','Cluster 5','Centroids',...
+%             'Location','NW')
+%         title 'Cluster Assignments and Centroids'
+%         hold off
+% 
+% 
+%     elseif i==6
+% 
+%         figure;
+%         plot(X(idx==1,1),X(idx==1,2),"o",'Color',"r",'MarkerSize',5,'MarkerFaceColor',"r")
+%         hold on
+%         plot(X(idx==2,1),X(idx==2,2),"o",'Color',"b",'MarkerSize',5,'MarkerFaceColor',"b")
+%         hold on
+%         plot(X(idx==3,1),X(idx==3,2),"o",'Color',"g",'MarkerSize',5,'MarkerFaceColor',"g")
+%         hold on
+%         plot(X(idx==4,1),X(idx==4,2),"o",'Color',"c",'MarkerSize',5,'MarkerFaceColor',"c")
+%         hold on
+%         plot(X(idx==5,1),X(idx==5,2),"o",'Color',"m",'MarkerSize',5,'MarkerFaceColor',"m")
+%         hold on
+%         plot(X(idx==6,1),X(idx==6,2),"o",'Color',"y",'MarkerSize',5,'MarkerFaceColor',"y")
+%         hold on
+%         plot(C_1,C_2,'kx',...
+%             'MarkerSize',15,'LineWidth',3)
+%         legend('Cluster 1','Cluster 2','Cluster 3', 'Cluster 4','Cluster 5','Cluster 6','Centroids',...
+%             'Location','NW')
+%         title 'Cluster Assignments and Centroids'
+%         hold off
+% 
+%     elseif i==7
+% 
+%         figure;
+%         plot(X(idx==1,1),X(idx==1,2),"o",'Color',"r",'MarkerSize',5,'MarkerFaceColor',"r")
+%         hold on
+%         plot(X(idx==2,1),X(idx==2,2),"o",'Color',"b",'MarkerSize',5,'MarkerFaceColor',"b")
+%         hold on
+%         plot(X(idx==3,1),X(idx==3,2),"o",'Color',"g",'MarkerSize',5,'MarkerFaceColor',"g")
+%         hold on
+%         plot(X(idx==4,1),X(idx==4,2),"o",'Color',"c",'MarkerSize',5,'MarkerFaceColor',"c")
+%         hold on
+%         plot(X(idx==5,1),X(idx==5,2),"o",'Color',"m",'MarkerSize',5,'MarkerFaceColor',"m")
+%         hold on
+%         plot(X(idx==6,1),X(idx==6,2),"o",'Color',"y",'MarkerSize',5,'MarkerFaceColor',"y")
+%         hold on
+%         plot(X(idx==7,1),X(idx==7,2),"o",'Color',"#0072BD",'MarkerSize',5,'MarkerFaceColor',"#0072BD")
+%         hold on
+%         plot(C_1,C_2,'kx',...
+%             'MarkerSize',15,'LineWidth',3)
+%         legend('Cluster 1','Cluster 2','Cluster 3', 'Cluster 4','Cluster 5','Cluster 6','Cluster 7','Centroids',...
+%             'Location','NW')
+%         title 'Cluster Assignments and Centroids'
+%         hold off
+% 
+% 
+%     elseif i==8
+%         figure;
+%         plot(X(idx==1,1),X(idx==1,2),"o",'Color',"r",'MarkerSize',5,'MarkerFaceColor',"r")
+%         hold on
+%         plot(X(idx==2,1),X(idx==2,2),"o",'Color',"b",'MarkerSize',5,'MarkerFaceColor',"b")
+%         hold on
+%         plot(X(idx==3,1),X(idx==3,2),"o",'Color',"g",'MarkerSize',5,'MarkerFaceColor',"g")
+%         hold on
+%         plot(X(idx==4,1),X(idx==4,2),"o",'Color',"c",'MarkerSize',5,'MarkerFaceColor',"c")
+%         hold on
+%         plot(X(idx==5,1),X(idx==5,2),"o",'Color',"m",'MarkerSize',5,'MarkerFaceColor',"m")
+%         hold on
+%         plot(X(idx==6,1),X(idx==6,2),"o",'Color',"y",'MarkerSize',5,'MarkerFaceColor',"y")
+%         hold on
+%         plot(X(idx==7,1),X(idx==7,2),"o",'Color',"#0072BD",'MarkerSize',5,'MarkerFaceColor',"#0072BD")
+%         hold on
+%         plot(X(idx==8,1),X(idx==8,2),"o",'Color',"#D95319",'MarkerSize',5,'MarkerFaceColor',"#D95319")
+%         hold on
+%         plot(C_1,C_2,'kx',...
+%             'MarkerSize',15,'LineWidth',3)
+%         legend('Cluster 1','Cluster 2','Cluster 3', 'Cluster 4','Cluster 5','Cluster 6','Cluster 7','Cluster 8','Centroids',...
+%             'Location','NW')
+%         title 'Cluster Assignments and Centroids'
+%         hold off
+% 
+%     elseif i==9
+%         figure;
+%         plot(X(idx==1,1),X(idx==1,2),"o",'Color',"r",'MarkerSize',10,'MarkerFaceColor',"r")
+%         hold on
+%         plot(X(idx==2,1),X(idx==2,2),"o",'Color',"b",'MarkerSize',10,'MarkerFaceColor',"b")
+%         hold on
+%         plot(X(idx==3,1),X(idx==3,2),"o",'Color',"g",'MarkerSize',10,'MarkerFaceColor',"g")
+%         hold on
+%         plot(X(idx==4,1),X(idx==4,2),"o",'Color',"c",'MarkerSize',10,'MarkerFaceColor',"c")
+%         hold on
+%         plot(X(idx==5,1),X(idx==5,2),"o",'Color',"m",'MarkerSize',10,'MarkerFaceColor',"m")
+%         hold on
+%         plot(X(idx==6,1),X(idx==6,2),"o",'Color',"y",'MarkerSize',10,'MarkerFaceColor',"y")
+%         hold on
+%         plot(X(idx==7,1),X(idx==7,2),"o",'Color',"#0072BD",'MarkerSize',10,'MarkerFaceColor',"#0072BD")
+%         hold on
+%         plot(X(idx==8,1),X(idx==8,2),"o",'Color',"#D95319",'MarkerSize',10,'MarkerFaceColor',"#D95319")
+%         hold on
+%         plot(X(idx==9,1),X(idx==9,2),"o",'Color',"#EDB120",'MarkerSize',10,'MarkerFaceColor',"#EDB120")
+%         hold on
+%         plot(C_1,C_2,'kx',...
+%             'MarkerSize',15,'LineWidth',3)
+%         xlabel('Rsoma','FontWeight','bold','FontSize',15);
+%         ylabel('CBF','FontWeight','bold','FontSize',15);
+%         legend('Cluster 1','Cluster 2','Cluster 3', 'Cluster 4','Cluster 5','Cluster 6','Cluster 7','Cluster 8','Cluster 9','Centroids',...
+%             'Location','NW','FontSize',12)
+%         title 'Cluster Assignments and Centroids'
+%         hold off
+%     end
+end
+
+sse(1)=[];
+idx_for_n_clusters(1,:)=[];
+%elbow plot
+figure, 
+p=plot(sse,'-o');
+p.MarkerEdgeColor = 'b';
+p.MarkerFaceColor = [0 0.5 0.5];
+%xline(20,'--','LineWidth',3,'Color','r');
+xline(9,'--','LineWidth',3,'Color','r');
+ylabel('Sum of Square Error','FontWeight','bold');
+xlabel('k clusters','FontWeight','bold');
+ax=gca;
+ax.XAxis.FontSize = 12;
+ax.YAxis.FontSize = 12;
+grid on
+
+%% plot spatially clusters found with clustering algorithm
+
+
+
+%I method
+% Cluster3D=NaN(size(V_atlas_tot));
+% for i=1:size(idx_and_regions,1)
+% Cluster3D(V_atlas_tot==idx_and_regions(i,2))=idx_and_regions(i,1);
+% dimension(i)=sum(V_atlas_tot(:)==idx_and_regions(i,2));
+% end
+
+n=9;%choose clusters to plot
+idx_n=idx_for_n_clusters(n,:); %the n-th cluster contains the idx for all the regions
+%idx_tr=idx_tr';
+%idx_and_regions=[idx_tr;labels];
+idx_and_regions_tr=[idx_n;labels]';
+
+
+
+regions=unique(V_atlas_tot);
+regions_tr=regions';
+diff=setdiff(regions_tr,labels);
+%II method
+
+V_atlas = V_atlas_tot;
+for ii = 1:length(V_atlas_tot(:))
+    if any(0==V_atlas_tot(ii))
+        V_atlas(ii)=0;
+    elseif any(diff==V_atlas_tot(ii))
+        V_atlas(ii)=0;
+    else
+        index=find(idx_and_regions_tr(:,2)==V_atlas_tot(ii));
+        idx_col=idx_and_regions_tr(:,1);
+        V_atlas(ii)=idx_col(index);%check! Is it selecting the idx of clusters ?
+    end
+end
+
+
+
+fig=figure;
+a=12:4:72;%1:4:44;%
+for i = 1:length(a)
+    subplot(4,4,i)
+    imagesc(rot90(V_atlas(:,:,a(i))));%,[0,n+1];
+    axis equal
+    axis off
+    caxis([0,n+1])
+    z=num2str(a(i));
+    title(strcat('Z=',z));
+end
+h=axes(fig,'visible','off');
+% map = [0.2 0.1 0.5
+%     0.1 0.5 0.8
+%     0.2 0.7 0.6
+%     0.8 0.7 0.3
+%     0.9 1 0];
+map=[0.5 0.5 0.5
+    1 0 0
+    0 0 1
+    0 1 0 %0.1 1 0
+     0 1 1
+     1 0 1
+     1 1 0
+     0 0.4470 0.7410
+     0.8500 0.3250 0.0980
+     0.9290 0.6940 0.1250];
+     %0.4940 0.1840 0.5560];
+colormap(map)%hsv
+%colorbar(h,'orientation','horizontal','Location','SouthOutside','FontSize',12);
+%caxis([0,3])
+
+%colors must correspond to the scatterplot
+%add the number of slice that we are observing
+%check which are the symmetric regions
+%find objective method to find elbow.
+
+%FAI PER IL CASO VOXEL WISE.
+
+
+%% k-means clustering changing seed (study of clusters linear fit slope changes)
+
 var_1=[];
 var_2=[];
 
@@ -1628,17 +2105,6 @@ end
 % s.MarkerEdgeColor = 'b';
 % s.MarkerFaceColor = [0 0.5 0.5];
 
-%elbow plot
-figure, 
-p=plot(sse,'-o');
-p.MarkerEdgeColor = 'b';
-p.MarkerFaceColor = [0 0.5 0.5];
-xline(20,'--','LineWidth',3,'Color','r');
-xline(9,'--','LineWidth',3,'Color','r');
-ax=gca;
-ax.XAxis.FontSize = 12;
-ax.YAxis.FontSize = 12;
-grid on
 
 %%
 %slopes vs number of clusters
@@ -1738,7 +2204,7 @@ xlabel('# clusters','FontSize',12,'FontWeight','bold');
 ylabel('Beta coefficient','FontSize',12,'FontWeight','bold');
 grid on
 
-%% plot spatially clusters found
+%% plot spatially clusters found with clustering algorithm
 
 
 
@@ -1877,14 +2343,14 @@ annotation('textbox',[.6,.2,.30,.13], 'String', txt, 'FontWeight', 'Bold');
 
 %correlation between CBF and SANDI in each region
 
-%this is done for all the "original" regions.
-% you could remove columns corresponding to regions removed in reshaped_medians_CBF
-%and reshaped_medians_SANDI
-for i = 1:(numel(labels_tot))
-    [r,p] = corrcoef(reshaped_medians_energy_tot(:,i), reshaped_medians_SANDI_tot(:,i),'rows','complete');
-    z(i)=r(2);
-    pvalue(i)=p(2);
-end
+% %this is done for all the "original" regions.
+% % you could remove columns corresponding to regions removed in reshaped_medians_CBF
+% %and reshaped_medians_SANDI
+% for i = 1:(numel(labels_tot))
+%     [r,p] = corrcoef(reshaped_medians_energy_tot(:,i), reshaped_medians_SANDI_tot(:,i),'rows','complete');
+%     z(i)=r(2);
+%     pvalue(i)=p(2);
+% end
 
 
 
@@ -1894,9 +2360,9 @@ for i = 1:(numel(labels))
     pvalue(i)=p(2);
 end
 
-figure, hist(z);
-xlabel('correlation, r');
-ylabel('# regions');
+% figure, hist(z);
+% xlabel('correlation, r');
+% ylabel('# regions');
 
 z_accepted=[];
 labels_accepted=[];
@@ -1907,12 +2373,20 @@ for i=1:numel(z)
     end
 end
 
+mean_regions_corr=nanmean(z_accepted);%why do we have NaNs?
+[h,p,ci,stats]=ttest(atanh(z_accepted));
+
+mean_corr=round(mean_regions_corr,2);
+mean_corr=num2str(mean_corr);
+
 figure, hist(z_accepted);
-xlabel('correlation, r');
-ylabel('# regions');
-      
+xlabel('correlation, r','FontWeight','bold','FontSize',15);
+ylabel('# regions','FontWeight','bold','FontSize',15);
+txt=strcat('\mu_r=',mean_corr);
+text(-0.4,14,txt, 'FontWeight', 'bold','FontSize',15);
+grid on 
 
-
+%% it is not necessary
 %plot correlation values vs regions
 x = 1:numel(z_accepted);
 figure, 
@@ -2008,10 +2482,34 @@ n = vertcat(n_very_high, n_high, n_moderate, n_low, n_very_low, n_very_high_neg,
 % 
 % indices_ordered=1:numel(z);
 % diff=setdiff(indices_ordered,regions);
+%
+%%
+%if you want to use rounded corr values and so more definite color maps
+rounding_factor=1;
+rounded_z=[];
+for i=1:length(z_accepted)
+    rounded=[];
+    rounded=round(z_accepted(i),rounding_factor);
+    rounded_z(i)=rounded;
+end
+z_accepted=rounded_z;
 
-
+%%
 corr_and_regions = [z_accepted;labels_accepted].';
 diff=setxor(labels_accepted,unique(V_atlas_tot));
+
+%% run this section if
+%you want to check where pos and neg corr regions are
+binary_z=[];
+for i=1:length(z_accepted)
+    if z_accepted(i)>0
+        binary_z(i)=1;
+    else
+        binary_z(i)=-1;
+    end
+end
+corr_and_regions = [binary_z;labels_accepted].';
+%%
 %
 V_atlas = V_atlas_tot;
 for ii = 1:length(V_atlas_tot(:))%lo fa per tutti i valori dell'immagine
@@ -2026,7 +2524,7 @@ for ii = 1:length(V_atlas_tot(:))%lo fa per tutti i valori dell'immagine
     end
 end
 
-
+V_corr_map=V_atlas;
 
 %plot only regions with significant p-values
 fig=figure;
@@ -2039,11 +2537,12 @@ for i = 1:length(a)
     caxis([-1,+1])
 end
 h=axes(fig,'visible','off');
-colormap pink
+colormap Gray
 colorbar(h,'orientation','horizontal','Location','SouthOutside','FontSize',12);
 sgtitle('Regional correlation map thresholded for p<0.05')
 caxis([-1,+1])
 
+%check for symmetry between positive and negative correlation.
 
 %% number of cells density map (one subject) 10
 
@@ -2104,7 +2603,7 @@ run='run-01';%CHANGE
 subjects = importdata(strcat('/media/nas_rete/Vitality/code/subjs_DWI.txt'));
 
 %run2
-subjects([11,27])=[];
+%subjects([11,27])=[];
 
 n_subjs=length(subjects);
 
@@ -2128,17 +2627,33 @@ for i = 1:1:n_subjs%lst
 
 
     subj=num2str(subjects{i});
-    img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/250101/CBF0toMNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CBF_map_2MNI2mm.nii.gz');
-    img_path_CMRO2 = strcat('/media/nas_rete/Vitality/maps2MNI/250101/CMRO20toMNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CMRO2_map_2MNI2mm.nii.gz');
+%     img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/250101/CBF0toMNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CBF_map_2MNI2mm.nii.gz');
+%     img_path_CMRO2 = strcat('/media/nas_rete/Vitality/maps2MNI/250101/CMRO20toMNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CMRO2_map_2MNI2mm.nii.gz');
+% 
+%     img_path_rsoma = strcat('/media/nas_rete/Vitality/maps2MNI/250101/SANDItoMNI/',subj,'_',run,'_SANDI-fit_Rsoma_2MNI2mm.nii.gz');
+%     img_path_fsoma = strcat('/media/nas_rete/Vitality/maps2MNI/250101/SANDItoMNI/',subj,'_',run,'_SANDI-fit_fsoma_2MNI2mm.nii.gz');
+%     %img_path_fc = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-00',i,'_run-01_SANDI-fit_fc_2MNI2mm.nii.gz');
+%     img_path_De = strcat('/media/nas_rete/Vitality/maps2MNI/250101/SANDItoMNI/',subj,'_',run,'_SANDI-fit_De_2MNI2mm.nii.gz');
+%     img_path_Din = strcat('/media/nas_rete/Vitality/maps2MNI/250101/SANDItoMNI/',subj,'_',run,'_SANDI-fit_Din_2MNI2mm.nii.gz');
+%     img_path_fneurite = strcat('/media/nas_rete/Vitality/maps2MNI/250101/SANDItoMNI/',subj,'_',run,'_SANDI-fit_fneurite_2MNI2mm.nii.gz');
+%     img_path_fextra = strcat('/media/nas_rete/Vitality/maps2MNI/250101/SANDItoMNI/',subj,'_',run,'_SANDI-fit_fextra_2MNI2mm.nii.gz');
 
-    img_path_rsoma = strcat('/media/nas_rete/Vitality/maps2MNI/250101/SANDItoMNI/',subj,'_',run,'_SANDI-fit_Rsoma_2MNI2mm.nii.gz');
-    img_path_fsoma = strcat('/media/nas_rete/Vitality/maps2MNI/250101/SANDItoMNI/',subj,'_',run,'_SANDI-fit_fsoma_2MNI2mm.nii.gz');
+     img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/250418_corrected_for_RIM/CBF02MNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CBF_map_2MNI.nii.gz');
+    
+
+    img_path_CMRO2 = strcat('/media/nas_rete/Vitality/registered/perf/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CMRO2_map.nii.gz'); %_2MNI2mm
+    
+    img_path_rsoma = strcat('/media/nas_rete/Vitality/registered/SANDI/',subj,'_',run,'_SANDI-fit_Rsoma_2mm.nii.gz');
+    img_path_fsoma = strcat('/media/nas_rete/Vitality/registered/SANDI/',subj,'_',run,'_SANDI-fit_fsoma_2mm.nii.gz');
+
+
     %img_path_fc = strcat('/media/nas_rete/Vitality/maps2MNI/SANDItoMNI/sub-00',i,'_run-01_SANDI-fit_fc_2MNI2mm.nii.gz');
-    img_path_De = strcat('/media/nas_rete/Vitality/maps2MNI/250101/SANDItoMNI/',subj,'_',run,'_SANDI-fit_De_2MNI2mm.nii.gz');
-    img_path_Din = strcat('/media/nas_rete/Vitality/maps2MNI/250101/SANDItoMNI/',subj,'_',run,'_SANDI-fit_Din_2MNI2mm.nii.gz');
-    img_path_fneurite = strcat('/media/nas_rete/Vitality/maps2MNI/250101/SANDItoMNI/',subj,'_',run,'_SANDI-fit_fneurite_2MNI2mm.nii.gz');
-    img_path_fextra = strcat('/media/nas_rete/Vitality/maps2MNI/250101/SANDItoMNI/',subj,'_',run,'_SANDI-fit_fextra_2MNI2mm.nii.gz');
+    img_path_De = strcat('/media/nas_rete/Vitality/registered/SANDI/',subj,'_',run,'_SANDI-fit_De_2mm.nii.gz');
+    img_path_Din = strcat('/media/nas_rete/Vitality/registered/SANDI/',subj,'_',run,'_SANDI-fit_Din_2mm.nii.gz');
+    img_path_fneurite = strcat('/media/nas_rete/Vitality/registered/SANDI/',subj,'_',run,'_SANDI-fit_fneurite_2mm.nii.gz');
+    img_path_fextra = strcat('/media/nas_rete/Vitality/registered/SANDI/',subj,'_',run,'_SANDI-fit_fextra_2mm.nii.gz');
 
+ 
 
     Vhdr = spm_vol(img_path_CBF);
     V_CBF_tot = spm_read_vols(Vhdr);
@@ -2177,6 +2692,34 @@ for i = 1:1:n_subjs%lst
     V_De_tots{end+1} = V_De_tot;
 
 end
+%%
+V_energy_tots=[];
+for i = 1:1:n_subjs %1:1:length(lst)
+    
+    temp = V_fsoma_tots{i};
+
+    V_energy_tots(:,i) = temp(:) ;
+
+end
+
+avg = mean(V_energy_tots,2);
+avg=reshape(avg,size(V_fsoma_tot));
+%%
+
+V_rsomas_tots=[];
+for i = 1:1:n_subjs %1:1:length(lst)
+    
+    temp = V_rsoma_tots{i};
+
+    V_rsomas_tots(:,i) = temp(:) ;
+
+end
+
+avg_r = mean(V_rsomas_tots,2);
+avg_r = reshape(avg_r,size(V_fsoma_tot));
+
+
+%%
 
 %%%%%%%%%%%%%%%%%Calculate fc maps for many subjects
 V_fc_tots={};
@@ -2215,29 +2758,23 @@ end
 % maxi=max(fc_map(:));
 % caxis([0,maxi])
 %%
-v='CBF';
+v='CMRO2';
 
 if strcmp(v,'CBF')
     V_energy_tots=V_CBF_tots;
-    low_thr=5;
-    up_thr=100;
+    low_thr=1;
+    %up_thr=100;
 else
     V_energy_tots=V_CMRO2_tots;
-    low_thr=90;
-    up_thr=200;
+    low_thr=1;
+    %up_thr=200;
 end
 
-V_energy_matrix=[];
-V_rsoma_matrix=[];
-V_fsoma_matrix=[];
-V_fneurite_matrix=[];
-V_Din_matrix=[];
-V_De_matrix=[];
-V_fextra_matrix=[];
-V_fc_matrix=[];
+
 
 V_GM = V_GM_tot;
-threashold = 0.5;
+V_GM(V_GM>0.5)=1;
+V_GM(V_GM<1)=0;
 
 regions = unique(V_atlas_tot(:));
 n_regions = numel(regions);
@@ -2255,9 +2792,7 @@ medians_Din = [];
 medians_De =[];
 medians_rsoma = [];
 
-V_GM = V_GM_tot;
-V_GM(V_GM>0.5)=1;
-V_GM(V_GM<1)=0;
+
 
 reshaped_medians_energy=[];
 reshaped_medians_De = [];
@@ -2360,7 +2895,7 @@ for i = 1:1:n_subjs %1:1:length(lst)
 
         indices_energy = [];
         for ii = 1:numel(V_energy_masked)
-            if V_energy_masked(ii)<low_thr || V_energy_masked(ii)>up_thr %50 200
+            if V_energy_masked(ii)<low_thr %|| V_energy_masked(ii)>up_thr %50 200
                 indices_energy(end+1)=ii;
             end
         end
@@ -2444,7 +2979,7 @@ for i = 1:1:n_subjs %1:1:length(lst)
     disp(strcat('Finished subject', num2str(i),'Starting subject', num2str(i+1)))
 
 end
-
+%%
 mean_energy_tot = nanmean(reshaped_medians_energy,1);%median
 mean_fc_tot = nanmean(reshaped_medians_fc,1);
 mean_fextra_tot = nanmean(reshaped_medians_fextra,1);
@@ -2551,14 +3086,69 @@ v_fsoma_tr = mean_fsoma_tot';
 X = [v_rsoma_tr v_fneurite_tr v_fextra_tr v_Din_tr v_De_tr v_fsoma_tr]; %v_fsoma_tr
 y = v_energy_tr;
 
+%%
 X = [v_rsoma_tr v_fsoma_tr]; %aggiungi fc
 y = v_energy_tr;
 
-%one subject v_fsoma size 1      239794
-%multisubjects v_fsoma 232597           1
-%figure, hist(y);
 
 mdl = fitglm(X,y,'linear');
+
+%% PCA
+X_pca=[X,y];
+[coeff,score,latent]=pca(X_pca);
+
+%% one subject
+corr_coefs_rsoma=[];
+corr_coefs_fsoma=[];
+tStats_x1=[];
+tStats_x2=[];
+pvalues_x1=[];
+pvalues_x2=[];
+partial_pvalues_rsoma=[];
+partial_pvalues_fsoma=[];
+
+for i = 1:n_subjs
+    energy_one_subj=reshaped_medians_energy(i,:);
+    rsoma_one_subj=reshaped_medians_rsoma(i,:);
+    fsoma_one_subj=reshaped_medians_fsoma(i,:);
+
+    energy_one_subj_tr=energy_one_subj';
+    rsoma_one_subj_tr=rsoma_one_subj';
+    fsoma_one_subj_tr=fsoma_one_subj';
+
+    X=[rsoma_one_subj_tr,fsoma_one_subj_tr];
+    y=energy_one_subj_tr;
+
+    mdl=fitglm(X,y,'linear');
+
+    Coefficients=table2array(mdl.Coefficients);
+    tStat_x1=Coefficients(2,3);
+    pvalue_x1=Coefficients(2,4);
+    tStat_x2=Coefficients(3,3);
+    pvalue_x2=Coefficients(3,4);
+
+    tStats_x1(i)=tStat_x1;
+    tStats_x2(i)=tStat_x2;
+    pvalues_x1(i)=pvalue_x1;
+    pvalues_x2(i)=pvalue_x2;
+    
+
+    energy_one_subj_tr(isnan(energy_one_subj_tr))=[];
+    fsoma_one_subj_tr(isnan(fsoma_one_subj_tr))=[];
+    rsoma_one_subj_tr(isnan(rsoma_one_subj_tr))=[];
+    [r_rsoma,p_rsoma]=partialcorr(rsoma_one_subj_tr,energy_one_subj_tr,fsoma_one_subj_tr);
+    [r_fsoma,p_fsoma]=partialcorr(fsoma_one_subj_tr,energy_one_subj_tr,rsoma_one_subj_tr);
+    corr_coefs_rsoma(i)=r_rsoma;
+    corr_coefs_fsoma(i)=r_fsoma;
+    partial_pvalues_rsoma(i)=p_rsoma;
+    partial_pvalues_fsoma(i)=p_fsoma;
+end
+
+n_significant_x1=sum(pvalues_x1<0.01);
+n_significant_x2=sum(pvalues_x2<0.01);
+
+n_significant_x1_partial_corr=sum(partial_pvalues_rsoma<0.01);
+n_significant_x2_partial_corr=sum(partial_pvalues_fsoma<0.01);
 
 %% correlation matrix
 A=[v_rsoma_tr v_fneurite_tr v_fextra_tr v_Din_tr v_De_tr v_fsoma_tr]; 
@@ -2569,21 +3159,21 @@ corrcoef(A)
 % mean_fsoma=nanmean(reshaped_medians_fsoma,1);
 % mean_energy=nanmean(reshaped_medians_energy,1);
 % 
-% n=
+% n
 % SE_energy = nanstd(reshaped_medians_energy,0,1)/sqrt(numel(reshaped_medians_energy(:,1)));
 % SE_SANDI = nanstd(reshaped_medians_fsoma,0,1)/sqrt(numel(reshaped_medians_energy(:,1)));
 
-[r,p] = corrcoef(mean_energy_tot, mean_fsoma_tot, 'rows','complete');
+[r,p] = corrcoef(mean_energy_tot, mean_fc_tot, 'rows','complete');
 
 corr_coef = round(r(2),2);
 p_value = p(2);
 corr_coef_str = num2str(corr_coef);
 p_value_str = num2str(p_value);
 
-P = polyfit(mean_fsoma_tot,mean_energy_tot,1);
-yfit_energy = P(1)*mean_fsoma_tot+P(2);
+P = polyfit(mean_fc_tot,mean_energy_tot,1);
+yfit_energy = P(1)*mean_fc_tot+P(2);
 
-parameter='fsoma';
+parameter='rsoma';
 %unit_of_measure='(%)';
 if strcmp(v,'CBF')
     dependent_parameter='CBF (ml/100g/min)';%'CMRO2(\mumol/100g/min)';%'CBF(ml/100g/min)';%'CMRO2(\mumol/100g/min)';
@@ -2592,10 +3182,10 @@ else
 end
 
 figure, 
-%s = scatter(mean_CBF,mean_SANDI);
-s = errorbar(mean_fsoma_tot, mean_energy_tot, SE_energy_tot, SE_energy_tot, SE_fsoma_tot, SE_fsoma_tot,'o');
+s = scatter(mean_fc_tot, mean_energy_tot);
+%s = errorbar(mean_fc_tot, mean_energy_tot, SE_energy_tot, SE_energy_tot, SE_fc_tot, SE_fc_tot,'o');
 hold on
-plot(mean_fsoma_tot,yfit_energy,'--','LineWidth',3,'Color',"#000000");
+plot(mean_fc_tot,yfit_energy,'--','LineWidth',3,'Color',"#000000");
 xlabel(strcat(parameter),'FontSize',15,'FontWeight','bold');
 ylabel(dependent_parameter,'FontSize',15,'FontWeight','bold');
 s.LineWidth = 0.6;
@@ -2605,7 +3195,7 @@ n_subjs_str=num2str(n_subjs);
 txt = {strcat('r = ',corr_coef_str,'**')};%,strcat('p-value = ',p_value_str)
 % text(60,12,txt,'FontWeight', 'Bold');
 %annotation('textbox',[.6,.2,.30,.13], 'String', txt, 'FontWeight', 'Bold','FontSize',15);
-text(0.40,67,txt, 'FontWeight', 'bold','FontSize',12);
+text(3.7138e+04,67,txt, 'FontWeight', 'bold','FontSize',12);
 set(get(gca, 'XAxis'), 'FontWeight', 'bold');
 set(get(gca, 'YAxis'), 'FontWeight', 'bold');
 set(gca,'box','off')
