@@ -511,8 +511,8 @@ ylabel('Variance CBF','FontWeight','bold');
 %load data
 study='Vitality';
 micro_parameter='fsoma';
-unit_of_measure='';%'(\mum)';
-energy_parameter='CBF';
+unit_of_measure='';%'(\mum)'
+energy_parameter='CMRO2';
 %%%%%%%%%%%%%
 
 
@@ -522,7 +522,7 @@ if strcmp(study,'Vitality')
     run='run-01';%CHANGE
     %subjects([11,27])=[];
 elseif strcmp(study,'PRIN')
-    subjects=importdata('/media/nas_rete/PRINAntonello2022/BIDS/code/subjects_DWI.txt');
+    subjects=importdata('/media/nas_rete/PRINAntonello2022/BIDS/code/subjects_EMI_tot.txt');
 elseif strcmp(study,'Cardiff')
     subjects=importdata('/media/nas_rete/GLOVE_STUDY/DDC/scripts/subjects.txt');
 end
@@ -555,17 +555,34 @@ for i = 1:1:n_subjs %lst
 
             img_path_CMRO2 = strcat('/media/nas_rete/Vitality/registered/perf/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CMRO2_map.nii.gz'); %_2MNI2mm
         end
+
+
         img_path_SANDI = strcat('/media/nas_rete/Vitality/registered/SANDI/',subj,'_',run,'_SANDI-fit_',micro_parameter,'_2mm.nii.gz');
         img_path_fsoma = strcat('/media/nas_rete/Vitality/registered/SANDI/',subj,'_',run,'_SANDI-fit_fsoma_2mm.nii.gz');
-
+ 
         %PRIN
     elseif strcmp(study,'PRIN')
 
-        img_path_CBF = strcat('/media/nas_rete/PRINAntonello2022/BIDS/derivatives/',subj,'/perf/CBF0_2MNI/',subj,'_ep2d_dexi_pc_v1_rs_CBF0_2MNI.nii.gz');
-        %         img_path_CMRO2 = strcat('');
-        img_path_SANDI = strcat('/media/nas_rete/PRINAntonello2022/BIDS/derivatives/',subj,'/dwi/SANDI_2MNI/',subj,'_',micro_parameter,'_SANDI-fit_2MNI.nii.gz');
-        img_path_fsoma = strcat('/media/nas_rete/PRINAntonello2022/BIDS/derivatives/',subj,'/dwi/SANDI_2MNI/',subj,'_fsoma_SANDI-fit_2MNI.nii.gz');
+        img_path_CBF = strcat('/media/nas_rete/PRINAntonello2022/BIDS/derivatives_moco/',subj,'/func/MAPS_2MNI/',subj,'_DEXIBH_regBOLDGM_CBF0_2MNI.nii.gz');
+        img_path_CMRO2 = strcat('/media/nas_rete/PRINAntonello2022/BIDS/derivatives_moco/',subj,'/func/MAPS_2MNI/',subj,'_DEXIBH_regBOLDGM_CMRO20_2MNI.nii.gz');
 
+        %         img_path_CMRO2 = strcat('');
+        %subjects who were scanned twice
+        if strcmp(subj,'sub-NEW14')
+            subj='sub-14';
+            img_path_SANDI = strcat('/media/nas_rete/PRINAntonello2022/BIDS/derivatives/',subj,'/dwi/SANDI_2MNI/',subj,'_',micro_parameter,'_SANDI-fit_2MNI.nii.gz');
+            img_path_fsoma = strcat('/media/nas_rete/PRINAntonello2022/BIDS/derivatives/',subj,'/dwi/SANDI_2MNI/',subj,'_fsoma_SANDI-fit_2MNI.nii.gz');
+            subj='sub-NEW14';
+        elseif strcmp(subj,'sub-NEW02')
+                subj='sub-02';
+                img_path_SANDI = strcat('/media/nas_rete/PRINAntonello2022/BIDS/derivatives/',subj,'/dwi/SANDI_2MNI/',subj,'_',micro_parameter,'_SANDI-fit_2MNI.nii.gz');
+                img_path_fsoma = strcat('/media/nas_rete/PRINAntonello2022/BIDS/derivatives/',subj,'/dwi/SANDI_2MNI/',subj,'_fsoma_SANDI-fit_2MNI.nii.gz');
+                subj='sub-NEW02';
+        else
+            img_path_SANDI = strcat('/media/nas_rete/PRINAntonello2022/BIDS/derivatives/',subj,'/dwi/SANDI_2MNI/',subj,'_',micro_parameter,'_SANDI-fit_2MNI.nii.gz');
+            img_path_fsoma = strcat('/media/nas_rete/PRINAntonello2022/BIDS/derivatives/',subj,'/dwi/SANDI_2MNI/',subj,'_fsoma_SANDI-fit_2MNI.nii.gz');
+
+        end
         %Cardiff
     elseif strcmp(study,'Cardiff')
 
@@ -583,13 +600,16 @@ for i = 1:1:n_subjs %lst
         V_CBF_tot = spm_read_vols(Vhdr);
         %     figure, imagesc(rot90(squeeze(V_CBF_tot(30,:,:))))
         %     imshow(rot90(squeeze(V(30,:,:))),[])
-        V_CBF_tots{end+1} = V_CBF_tot;
+            %V_CBF_tot_divided=V_CBF_tot/1000;
+            V_CBF_tots{end+1} = V_CBF_tot;
+        %end
     else
 
         Vhdr = spm_vol(img_path_CMRO2);
         V_CMRO2_tot = spm_read_vols(Vhdr);
         %     figure, imagesc(rot90(squeeze(V_CBF_tot(30,:,:))))
         %     imshow(rot90(squeeze(V(30,:,:))),[])
+        %V_CMRO2_tot_divided=V_CMRO2_tot/1000;
         V_CMRO2_tots{end+1} = V_CMRO2_tot;
     end
 
@@ -600,7 +620,6 @@ for i = 1:1:n_subjs %lst
     Vhdr = spm_vol(img_path_fsoma);
     V_fsoma_tot = spm_read_vols(Vhdr);
     V_fsoma_tots{end+1} = V_fsoma_tot;
-
 
 end
 
@@ -780,11 +799,13 @@ for i = 1:1:n_subjs %here we loose information about the real number of subj
     V_SANDI_tot = V_SANDI_tots{i};
     V_fsoma_tot = V_fsoma_tots{i};
 
+
     V_fsoma_tot(V_fsoma_tot>0.15)=1;
     V_fsoma_tot(V_fsoma_tot<1)=0;
 
     medians_energy=[];
     medians_SANDI=[];
+
     n_voxels_lst=[];
     for k = 2:numel(regions)
         tic
@@ -803,8 +824,9 @@ for i = 1:1:n_subjs %here we loose information about the real number of subj
         
         V_energy = V_energy_tot;
         V_SANDI = V_SANDI_tot;
+        
 
-        V_energy_fsoma_masked = V_energy.*V_fsoma_tot;
+        V_energy_fsoma_masked = V_energy.*V_fsoma_tot;%.*V_atlas
         V_SANDI_fsoma_masked = V_SANDI.*V_fsoma_tot;
 
         V_energy_atlas = V_energy_fsoma_masked.*V_atlas;
@@ -943,7 +965,7 @@ s=histogram(corr_for_each_subj,'FaceAlpha',1,'BinWidth',0.07);
 s.FaceColor="b";
 xlabel('correlation coefficient, r','FontWeight','bold','FontSize',15);
 ylabel('Counts (# subjects)','FontWeight','bold','FontSize',15);
-ylim([0,20]);
+%ylim([0,12]);
 xline(0,'--','LineWidth',3);
 if p<0.05 && p>0.01    
     txt = {strcat('\mu_r = ',mean_corr,'*')};
@@ -953,7 +975,7 @@ else
     txt = {strcat('\mu_r = ',mean_corr,'***')};
 end
 
-text(0.5,7,txt, 'FontWeight', 'bold','FontSize',15);
+text(0.1,7,txt, 'FontWeight', 'bold','FontSize',15);
 grid on
 
 %% Fisher transform
@@ -2355,7 +2377,7 @@ annotation('textbox',[.6,.2,.30,.13], 'String', txt, 'FontWeight', 'Bold');
 
 
 for i = 1:(numel(labels))
-    [r,p] = corrcoef(reshaped_medians_energy(:,i), reshaped_medians_SANDI(:,i),'rows','complete');
+    [r,p] = corrcoef(reshaped_medians_energy_tot(:,i), reshaped_medians_SANDI_tot(:,i),'rows','complete');
     z(i)=r(2);
     pvalue(i)=p(2);
 end
@@ -2383,7 +2405,7 @@ figure, hist(z_accepted);
 xlabel('correlation, r','FontWeight','bold','FontSize',15);
 ylabel('# regions','FontWeight','bold','FontSize',15);
 txt=strcat('\mu_r=',mean_corr);
-text(-0.4,14,txt, 'FontWeight', 'bold','FontSize',15);
+text(0.4,14,txt, 'FontWeight', 'bold','FontSize',15);
 grid on 
 
 %% it is not necessary
@@ -2524,7 +2546,13 @@ for ii = 1:length(V_atlas_tot(:))%lo fa per tutti i valori dell'immagine
     end
 end
 
+
 V_corr_map=V_atlas;
+if strcmp(micro_parameter,'fsoma')
+    V_corr_fsoma_map=V_corr_map;
+else
+    V_corr_rsoma_map=V_corr_map;
+end
 
 %plot only regions with significant p-values
 fig=figure;
@@ -2543,6 +2571,48 @@ sgtitle('Regional correlation map thresholded for p<0.05')
 caxis([-1,+1])
 
 %check for symmetry between positive and negative correlation.
+
+%% plot spatially mean parametric maps
+diff=setxor(labels,unique(V_atlas_tot));
+
+
+V_atlas = V_atlas_tot;
+labels_and_par = [labels;mean_energy].';
+for ii = 1:length(V_atlas_tot(:))%lo fa per tutti i valori dell'immagine
+    if any(0==V_atlas_tot(ii))
+        V_atlas(ii)=0;
+    elseif any(diff==V_atlas_tot(ii))
+        V_atlas(ii)=0;
+    else
+        idx=find(labels_and_par(:,1)==V_atlas_tot(ii));
+        par=labels_and_par(:,2);
+        V_atlas(ii)=par(idx);
+    end
+end
+
+fig=figure;
+a=28:4:68;%12:4:72;
+for i = 1:length(a)
+    subplot(4,4,i)
+    imagesc(rot90(V_atlas(:,:,a(i))))%[0,8]
+    axis equal
+    axis off
+    %caxis([-1,+1])
+end
+h=axes(fig,'visible','off');
+%colormap Gray
+colorbar(h,'orientation','horizontal','Location','SouthOutside','FontSize',12);
+sgtitle('Regional correlation map thresholded for p<0.05')
+%caxis([-1,+1])
+
+V_mean_energy_map=V_atlas;
+
+if strcmp(micro_parameter,'fsoma')
+    V_mean_fsoma_map=V_atlas;
+else
+    V_mean_rsoma_map=V_atlas;
+end
+
 
 %% number of cells density map (one subject) 10
 
@@ -2758,7 +2828,7 @@ end
 % maxi=max(fc_map(:));
 % caxis([0,maxi])
 %%
-v='CMRO2';
+v='CBF';
 
 if strcmp(v,'CBF')
     V_energy_tots=V_CBF_tots;
@@ -2806,9 +2876,10 @@ reshaped_medians_fc = [];
 n_voxels_lst = [];
 n_voxels_lst_allsubjs=[];
 
-% corr_for_each_subj=[];
-% pvalue_for_each_subj=[];
-
+corr_for_each_subj_rsoma=[];
+pvalue_for_each_subj_rsoma=[];
+corr_for_each_subj_fsoma=[];
+pvalue_for_each_subj_fsoma=[];
 % tic
 for i = 1:1:n_subjs %1:1:length(lst)
     
@@ -2862,11 +2933,11 @@ for i = 1:1:n_subjs %1:1:length(lst)
         V_fsoma_to_mask(V_fsoma_to_mask<1)=0;
 
         V_energy_atlas = V_energy.*V_atlas.*V_fsoma_to_mask;
-        V_fc_atlas = V_fc.*V_atlas;%.*V_fsoma_to_mask;
+        V_fc_atlas = V_fc.*V_atlas.*V_fsoma_to_mask;
         V_fextra_atlas = V_fextra.*V_atlas.*V_fsoma_to_mask;
         V_fneurite_atlas = V_fneurite.*V_atlas.*V_fsoma_to_mask;
         V_rsoma_atlas = V_rsoma.*V_atlas.*V_fsoma_to_mask;
-        V_fsoma_atlas = V_fsoma.*V_atlas;%.*V_fsoma_to_mask;
+        V_fsoma_atlas = V_fsoma.*V_atlas.*V_fsoma_to_mask;
         V_Din_atlas = V_Din.*V_atlas.*V_fsoma_to_mask;
         V_De_atlas = V_De.*V_atlas.*V_fsoma_to_mask;
 
@@ -2971,15 +3042,58 @@ for i = 1:1:n_subjs %1:1:length(lst)
     reshaped_medians_rsoma(i,:) = medians_rsoma;
     reshaped_medians_Din(i,:) = medians_Din;
     reshaped_medians_De(i,:) = medians_De;
-    %[r,p] = corrcoef(medians_CBF, medians_SANDI, 'rows','complete');
+    
+    [r_rsoma,p_rsoma] = corrcoef(medians_energy, medians_rsoma, 'rows','complete');
+    [r_fsoma,p_fsoma] = corrcoef(medians_energy, medians_fsoma, 'rows','complete');
 
-%     corr_for_each_subj(i)=r(2);
-%     pvalue_for_each_subj(i)=p(2);
+    corr_for_each_subj_rsoma(i)=r_rsoma(2);
+    pvalue_for_each_subj_rsoma(i)=p_rsoma(2);
+
+    corr_for_each_subj_fsoma(i)=r_fsoma(2);
+    pvalue_for_each_subj_fsoma(i)=p_fsoma(2);
 
     disp(strcat('Finished subject', num2str(i),'Starting subject', num2str(i+1)))
 
 end
-%%
+
+%% for each subj
+par='Rsoma'; %select
+
+if strcmp(par,'Rsoma')
+    corr_for_each_subj=corr_for_each_subj_rsoma;
+else
+    corr_for_each_subj=corr_for_each_subj_fsoma;
+end
+
+mean_with_subjs_corr=nanmean(corr_for_each_subj);%why do we have NaNs?
+[h,p,ci,stats]=ttest(atanh(corr_for_each_subj));
+
+
+mean_corr=round(mean_with_subjs_corr,2);
+mean_corr=num2str(mean_corr);
+
+pvalue=num2str(round(p,2));
+
+
+figure, 
+s=histogram(corr_for_each_subj,'FaceAlpha',1,'BinWidth',0.07);
+s.FaceColor="b";
+xlabel('correlation coefficient, r','FontWeight','bold','FontSize',15);
+ylabel('Counts (# subjects)','FontWeight','bold','FontSize',15);
+ylim([0,20]);
+xline(0,'--','LineWidth',3);
+if p<0.05 && p>0.01    
+    txt = {strcat('\mu_r = ',mean_corr,'*')};
+elseif p<0.01 && p>0.001   
+    txt = {strcat('\mu_r = ',mean_corr,'**')};
+else
+    txt = {strcat('\mu_r = ',mean_corr,'***')};
+end
+
+text(0.5,7,txt, 'FontWeight', 'bold','FontSize',15);
+grid on
+
+%% mean across subjs
 mean_energy_tot = nanmean(reshaped_medians_energy,1);%median
 mean_fc_tot = nanmean(reshaped_medians_fc,1);
 mean_fextra_tot = nanmean(reshaped_medians_fextra,1);
@@ -3000,7 +3114,7 @@ SE_rsoma_tot = nanstd(reshaped_medians_rsoma,0,1)/sqrt(n);
 SE_Din_tot = nanstd(reshaped_medians_Din,0,1)/sqrt(n);
 SE_De_tot = nanstd(reshaped_medians_De,0,1)/sqrt(n);
 
-var=SE_rsoma_tot./mean_rsoma_tot;
+var=SE_rsoma_tot./mean_rsoma_tot;%CHECK
 
 mean_n_voxels_tot = mean(n_voxels_lst_allsubjs,1);
 regions=1:numel(mean_energy_tot);
@@ -3013,7 +3127,7 @@ mean_n_voxels=mean_n_voxels_tot;
 
 idx_low_n_voxels=[];
 for i=1:numel(regions)
-    if mean_n_voxels_tot(i)<prctile(mean_n_voxels_tot,40)%mean(mean_n_voxels)/5
+    if mean_n_voxels_tot(i)<prctile(mean_n_voxels_tot,40)%mean(mean_n_voxels)/5 %CHECK
         idx_low_n_voxels(end+1)=i;
     end
 end
@@ -3155,6 +3269,13 @@ A=[v_rsoma_tr v_fneurite_tr v_fextra_tr v_Din_tr v_De_tr v_fsoma_tr];
 corrcoef(A)
 
 %% plot energy vs fsoma
+parameter='fsoma';
+
+if strcmp(parameter,'Rsoma')
+    mean_SANDI=mean_rsoma_tot;
+else
+    mean_SANDI=mean_fsoma_tot;
+end
 
 % mean_fsoma=nanmean(reshaped_medians_fsoma,1);
 % mean_energy=nanmean(reshaped_medians_energy,1);
@@ -3163,17 +3284,17 @@ corrcoef(A)
 % SE_energy = nanstd(reshaped_medians_energy,0,1)/sqrt(numel(reshaped_medians_energy(:,1)));
 % SE_SANDI = nanstd(reshaped_medians_fsoma,0,1)/sqrt(numel(reshaped_medians_energy(:,1)));
 
-[r,p] = corrcoef(mean_energy_tot, mean_fc_tot, 'rows','complete');
+[r,p] = corrcoef(mean_energy_tot, mean_SANDI, 'rows','complete');
 
 corr_coef = round(r(2),2);
 p_value = p(2);
 corr_coef_str = num2str(corr_coef);
 p_value_str = num2str(p_value);
 
-P = polyfit(mean_fc_tot,mean_energy_tot,1);
-yfit_energy = P(1)*mean_fc_tot+P(2);
+P = polyfit(mean_SANDI,mean_energy_tot,1);
+yfit_energy = P(1)*mean_SANDI+P(2);
 
-parameter='rsoma';
+
 %unit_of_measure='(%)';
 if strcmp(v,'CBF')
     dependent_parameter='CBF (ml/100g/min)';%'CMRO2(\mumol/100g/min)';%'CBF(ml/100g/min)';%'CMRO2(\mumol/100g/min)';
@@ -3182,10 +3303,10 @@ else
 end
 
 figure, 
-s = scatter(mean_fc_tot, mean_energy_tot);
+s = scatter(mean_SANDI, mean_energy_tot);
 %s = errorbar(mean_fc_tot, mean_energy_tot, SE_energy_tot, SE_energy_tot, SE_fc_tot, SE_fc_tot,'o');
 hold on
-plot(mean_fc_tot,yfit_energy,'--','LineWidth',3,'Color',"#000000");
+plot(mean_SANDI,yfit_energy,'--','LineWidth',3,'Color',"#000000");
 xlabel(strcat(parameter),'FontSize',15,'FontWeight','bold');
 ylabel(dependent_parameter,'FontSize',15,'FontWeight','bold');
 s.LineWidth = 0.6;
@@ -3195,7 +3316,7 @@ n_subjs_str=num2str(n_subjs);
 txt = {strcat('r = ',corr_coef_str,'**')};%,strcat('p-value = ',p_value_str)
 % text(60,12,txt,'FontWeight', 'Bold');
 %annotation('textbox',[.6,.2,.30,.13], 'String', txt, 'FontWeight', 'Bold','FontSize',15);
-text(3.7138e+04,67,txt, 'FontWeight', 'bold','FontSize',12);
+text(0.4,67,txt, 'FontWeight', 'bold','FontSize',12);
 set(get(gca, 'XAxis'), 'FontWeight', 'bold');
 set(get(gca, 'YAxis'), 'FontWeight', 'bold');
 set(gca,'box','off')
