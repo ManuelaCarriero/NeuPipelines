@@ -510,7 +510,7 @@ ylabel('Variance CBF','FontWeight','bold');
 %% GM and regional correlation (all subjects) 7
 %load data
 study='Vitality';
-micro_parameter='fsoma';
+micro_parameter='fsup';
 unit_of_measure='';%'(\mum)'
 energy_parameter='CBF';
 %%%%%%%%%%%%%
@@ -521,6 +521,7 @@ if strcmp(study,'Vitality')
     subjects = importdata('/media/nas_rete/Vitality/code/subjs_DWI.txt');
     run='run-01';%CHANGE
     %subjects([11,27])=[];
+    subjects(26)=[];
 elseif strcmp(study,'PRIN')
     subjects=importdata('/media/nas_rete/PRINAntonello2022/BIDS/code/subjects_EMI_tot.txt');
 elseif strcmp(study,'Cardiff')
@@ -2402,15 +2403,50 @@ annotation('textbox',[.6,.2,.30,.13], 'String', txt, 'FontWeight', 'Bold');
 %     [r,p] = corrcoef(reshaped_medians_energy_tot(:,i), reshaped_medians_SANDI_tot(:,i),'rows','complete');
 %     z(i)=r(2);
 %     pvalue(i)=p(2);
-% end
-
-
-
+% end_tot
+micro_parameter='Rsoma';
+energy='CMRO2';
+if strcmp(energy,'CMRO2')
+    if strcmp(micro_parameter,'Rsoma')
+        reshaped_medians_energy_tot=reshaped_medians_CMRO2_tot;
+        reshaped_medians_SANDI_tot=reshaped_medians_rsoma_tot;
+    elseif strcmp(micro_parameter,'fsoma')
+        reshaped_medians_energy_tot=reshaped_medians_CMRO2_tot;
+        reshaped_medians_SANDI_tot=reshaped_medians_fsoma_tot;
+    elseif strcmp(micro_parameter,'fsup')
+        reshaped_medians_energy_tot=reshaped_medians_CMRO2_tot;
+        reshaped_medians_SANDI_tot=reshaped_medians_fsup_tot;
+    end
+elseif strcmp(energy,'CBF')
+    if strcmp(micro_parameter,'Rsoma')
+        reshaped_medians_energy_tot=reshaped_medians_CBF_tot;
+        reshaped_medians_SANDI_tot=reshaped_medians_rsoma_tot;
+    elseif strcmp(micro_parameter,'fsoma')
+        reshaped_medians_energy_tot=reshaped_medians_CBF_tot;
+        reshaped_medians_SANDI_tot=reshaped_medians_fsoma_tot;
+    elseif strcmp(micro_parameter,'fsup')
+        reshaped_medians_energy_tot=reshaped_medians_CBF_tot;
+        reshaped_medians_SANDI_tot=reshaped_medians_fsup_tot;
+    end
+end
+% 
+labels=labels_tot;
+z=[];
+pvalue=[];
 for i = 1:(numel(labels))
     [r,p] = corrcoef(reshaped_medians_energy_tot(:,i), reshaped_medians_SANDI_tot(:,i),'rows','complete');
-    z(i)=r(2);
-    pvalue(i)=p(2);
+    z(end+1)=r(2);
+    pvalue(end+1)=p(2);
 end
+
+% z=[];
+% pvalue=[];
+% for i = 1:(numel(labels))
+%     [r,p] = corrcoef(reshaped_medians_energy(:,i), reshaped_medians_SANDI(:,i),'rows','complete');
+%     z(i)=r(2);
+%     pvalue(i)=p(2);
+% end
+
 
 % figure, hist(z);
 % xlabel('correlation, r');
@@ -2418,10 +2454,12 @@ end
 
 z_accepted=[];
 labels_accepted=[];
+pvalue_accepted=[];
 for i=1:numel(z)
     if pvalue(i)<0.05
         z_accepted(end+1)=z(i);
         labels_accepted(end+1)=labels(i);
+        pvalue_accepted(end+1)=pvalue(i);
     end
 end
 
@@ -2438,6 +2476,70 @@ txt=strcat('\mu_r=',mean_corr);
 text(0.4,14,txt, 'FontWeight', 'bold','FontSize',15);
 grid on 
 
+% z_accepted=z;
+% labels_accepted=labels;
+if strcmp(energy,'CMRO2')
+    if strcmp(micro_parameter,'Rsoma')
+        figure, scatter(reshaped_medians_rsoma_tot,reshaped_medians_CMRO2_tot,'filled')
+        [r,p]=corrcoef(reshaped_medians_rsoma_tot,reshaped_medians_CMRO2_tot,'rows','complete');
+        corr_coef_str=num2str(round(r(2),2));
+        txt = {strcat('r = ',corr_coef_str,'***')};
+        text(12.5,120,txt,'FontSize',15, 'FontWeight', 'bold','FontSize',12);
+        xlabel('Rsoma(\mum)','FontSize',15,'FontWeight','bold');
+        ylabel('CMRO_2(\mumol/100g/min)','FontSize',15,'FontWeight','bold');
+        grid on
+
+        medians_rsoma_tot_accepted=reshaped_medians_rsoma_tot(:,[find(labels==7),find(labels==9),find(labels==30),find(labels==57),find(labels==94),find(labels==95)]);
+        medians_CMRO2_tot_accepted=reshaped_medians_CMRO2_tot(:,[find(labels==7),find(labels==9),find(labels==30),find(labels==57),find(labels==94),find(labels==95)]);
+
+        figure, scatter(medians_rsoma_tot_accepted, medians_CMRO2_tot_accepted,'filled')
+        lgd=legend('7','9','30','57','94','95');
+        title(lgd,'Labels')
+        grid on
+        xlabel('Rsoma(\mum)','FontSize',15,'FontWeight','bold');
+        ylabel('CMRO_2(\mumol/100g/min)','FontSize',15,'FontWeight','bold');
+
+    elseif strcmp(micro_parameter,'fsoma')
+        figure, scatter(reshaped_medians_fsoma_tot,reshaped_medians_CMRO2_tot)
+
+        medians_fsoma_tot_accepted=reshaped_medians_fsoma_tot(:,[find(labels==7),find(labels==9),find(labels==30),find(labels==57),find(labels==94),find(labels==95)]);
+        medians_CMRO2_tot_accepted=reshaped_medians_CMRO2_tot(:,[find(labels==7),find(labels==9),find(labels==30),find(labels==57),find(labels==94),find(labels==95)]);
+
+        figure, scatter(medians_fsoma_tot_accepted, medians_CMRO2_tot_accepted)
+
+    elseif strcmp(micro_parameter,'fsup')
+        figure, scatter(reshaped_medians_fsup_tot,reshaped_medians_CMRO2_tot)
+
+        medians_fsup_tot_accepted=reshaped_medians_fsup_tot(:,[find(labels==42)]);
+        medians_CMRO2_tot_accepted=reshaped_medians_CMRO2_tot(:,[find(labels==42)]);
+
+        figure, scatter(medians_fsup_tot_accepted, medians_CMRO2_tot_accepted)
+
+    end
+elseif strcmp(energy,'CBF')
+    if strcmp(micro_parameter,'Rsoma')
+        figure, scatter(reshaped_medians_rsoma_tot,reshaped_medians_CBF_tot)
+        
+        medians_rsoma_tot_accepted=reshaped_medians_rsoma_tot(:,[find(labels==7),find(labels==9),find(labels==30),find(labels==57),find(labels==94),find(labels==95)]);
+        medians_CBF_tot_accepted=reshaped_medians_CBF_tot(:,[find(labels==7),find(labels==9),find(labels==30),find(labels==57),find(labels==94),find(labels==95)]);
+
+        figure, scatter(medians_rsoma_tot_accepted, medians_CBF_tot_accepted)
+    elseif strcmp(micro_parameter,'fsoma')
+        figure, scatter(reshaped_medians_fsoma_tot,reshaped_medians_CBF_tot)
+
+        medians_fsoma_tot_accepted=reshaped_medians_fsoma_tot(:,[find(labels==7),find(labels==9),find(labels==30),find(labels==57),find(labels==94),find(labels==95)]);
+        medians_CBF_tot_accepted=reshaped_medians_CBF_tot(:,[find(labels==7),find(labels==9),find(labels==30),find(labels==57),find(labels==94),find(labels==95)]);
+
+        figure, scatter(medians_fsoma_tot_accepted, medians_CBF_tot_accepted)
+    elseif strcmp(micro_parameter,'fsup')
+        figure, scatter(reshaped_medians_fsup_tot,reshaped_medians_CBF_tot)
+
+        medians_fsup_tot_accepted=reshaped_medians_fsup_tot(:,[find(labels==7),find(labels==9),find(labels==30),find(labels==57),find(labels==94),find(labels==95)]);
+        medians_CBF_tot_accepted=reshaped_medians_CBF_tot(:,[find(labels==7),find(labels==9),find(labels==30),find(labels==57),find(labels==94),find(labels==95)]);
+
+        figure, scatter(medians_fsup_tot_accepted, medians_CBF_tot_accepted)
+    end
+end
 %% it is not necessary
 %plot correlation values vs regions
 x = 1:numel(z_accepted);
@@ -2577,13 +2679,7 @@ for ii = 1:length(V_atlas_tot(:))%lo fa per tutti i valori dell'immagine
 end
 
 
-V_corr_map=V_atlas;
-if strcmp(micro_parameter,'fsoma')
-    V_corr_fsoma_map=V_corr_map;
-else
-    V_corr_rsoma_map=V_corr_map;
-end
-V_atlas=V_mean_energy_map;
+%
 %plot only regions with significant p-values
 fig=figure;
 a=28:4:68;%12:4:72;
@@ -2592,15 +2688,49 @@ for i = 1:length(a)
     imagesc(rot90(V_atlas(:,:,a(i))))%[0,8]
     axis equal
     axis off
-    %caxis([-1,+1])
+    caxis([-1,+1])
 end
 h=axes(fig,'visible','off');
 colormap Gray
 colorbar(h,'orientation','horizontal','Location','SouthOutside','FontSize',12);
 sgtitle('Regional correlation map thresholded for p<0.05')
-%caxis([-1,+1])
+caxis([-1,+1])
 
 %check for symmetry between positive and negative correlation.
+
+
+% Save maps
+V_corr_map=V_atlas;
+if strcmp(energy,'CMRO2')
+    if strcmp(micro_parameter,'fsoma')
+        V_corr_CMRO2vsfsoma_map=V_corr_map;
+        labels_accepted_CMRO2vsfsoma_map=labels_accepted;
+        z_accepted_CMRO2vsfsoma_map=z_accepted;
+    elseif strcmp(micro_parameter,'Rsoma')
+        V_corr_CMRO2vsrsoma_map=V_corr_map;
+        labels_accepted_CMRO2vsrsoma_map=labels_accepted;
+        z_accepted_CMRO2vsrsoma_map=z_accepted;
+    elseif strcmp(micro_parameter,'fsup')
+        V_corr_CMRO2vsfsup_map=V_corr_map;
+        labels_accepted_CMRO2vsfsup_map=labels_accepted;
+        z_accepted_CMRO2vsfsup_map=z_accepted;
+    end
+elseif strcmp(energy,'CBF')
+    if strcmp(micro_parameter,'fsoma')
+        V_corr_CBFvsfsoma_map=V_corr_map;
+        labels_accepted_CBFvsfsoma_map=labels_accepted;
+        z_accepted_CBFvsfsoma_map=z_accepted;
+    elseif strcmp(micro_parameter,'Rsoma')
+        V_corr_CBFvsrsoma_map=V_corr_map;
+        labels_accepted_CBFvsrsoma_map=labels_accepted;
+        z_accepted_CBFvsrsoma_map=z_accepted;
+    elseif strcmp(micro_parameter,'fsup')
+        V_corr_CBFvsfsup_map=V_corr_map;
+        labels_accepted_CBFvsfsup_map=labels_accepted;
+        z_accepted_CBFvsfsup_map=z_accepted;
+    end
+end
+% V_atlas=V_mean_energy_map;
 
 %% plot spatially mean parametric maps
 micro_parameter='Rsoma';
@@ -3157,7 +3287,7 @@ end
 
 
 
-low_thr=1;
+%low_thr=1;
 
 
 
@@ -3310,14 +3440,14 @@ for i = 1:1:n_subjs %1:1:length(lst)
 
         indices_CBF = [];
         for ii = 1:numel(V_CBF_masked)
-            if V_CBF_masked(ii)<low_thr %|| V_energy_masked(ii)>up_thr %50 200
+            if V_CBF_masked(ii)==0 %|| V_energy_masked(ii)>up_thr %50 200
                 indices_CBF(end+1)=ii;
             end
         end
 
         indices_CMRO2 = [];
         for ii = 1:numel(V_CMRO2_masked)
-            if V_CMRO2_masked(ii)<low_thr %|| V_energy_masked(ii)>up_thr %50 200
+            if V_CMRO2_masked(ii)==0 %|| V_energy_masked(ii)>up_thr %50 200
                 indices_CMRO2(end+1)=ii;
             end
         end
@@ -3433,8 +3563,10 @@ for i = 1:1:n_subjs %1:1:length(lst)
 
 end
 %% select parameters to investigate
-par='fsup'; 
-energy_par='CMRO2';
+par='Rsoma'; 
+%the energy consumption parameter has to be selected for a plotting reason
+%(both CBF and CMRO2 are processed anyway)
+energy_par='CBF';
 %% for each subj CBF&CMRO2
 
 
@@ -3467,7 +3599,7 @@ s=histogram(corr_for_each_subj,'FaceAlpha',1,'BinWidth',0.07);
 s.FaceColor="b";
 xlabel('correlation coefficient, r','FontWeight','bold','FontSize',15);
 ylabel('Counts (# subjects)','FontWeight','bold','FontSize',15);
-ylim([0,10]);
+ylim([0,14]);
 xline(0,'--','LineWidth',3);
 if p<0.05 && p>0.01    
     txt = {strcat('\mu_r = ',mean_corr,'*')};
@@ -3697,6 +3829,8 @@ idx_high_var_rsoma=find(var_rsoma>prctile(var_rsoma,75));
 idx_high_var_fsoma=find(var_fsoma>prctile(var_fsoma,75));
 idx_high_var_fsup=find(var_fsup>prctile(var_fsup,75));
 
+%% in order to do Energy vs one Microparameter analysis
+
 if strcmp(par,'Rsoma')
     mean_CBF_tot(idx_high_var_rsoma)=[];
     mean_CMRO2_tot(idx_high_var_rsoma)=[];
@@ -3718,6 +3852,51 @@ elseif strcmp(par,'fsup')
     SE_fsup_tot(idx_high_var_fsup)=[];
     SE_CBF_tot(idx_high_var_fsup)=[];  
     SE_CMRO2_tot(idx_high_var_fsup)=[]; 
+end
+
+%% in order to do Energy vs many Microparameters analysis
+
+idx_tot=unique([idx_high_var_rsoma,idx_high_var_fsoma,idx_high_var_fsup]);
+
+mean_CBF_tot(idx_tot)=[];
+mean_CMRO2_tot(idx_tot)=[];
+mean_rsoma_tot(idx_tot)=[];
+mean_fsoma_tot(idx_tot)=[];
+mean_fsup_tot(idx_tot)=[];
+%% Matrix for correlation across subjs analysis (region by region)
+
+V_atlas=V_atlas_tot;
+labels_tot=unique(V_atlas);
+labels_tot(labels_tot==0)=[];
+
+reshaped_medians_CBF_tot=reshaped_medians_CBF;
+reshaped_medians_CMRO2_tot=reshaped_medians_CMRO2;
+reshaped_medians_fsoma_tot=reshaped_medians_fsoma;
+reshaped_medians_fsup_tot=reshaped_medians_fsup;
+reshaped_medians_rsoma_tot=reshaped_medians_rsoma;
+
+reshaped_medians_CBF_tot(:,idx_low_n_voxels)=[];
+reshaped_medians_CMRO2_tot(:,idx_low_n_voxels)=[];
+labels_tot(idx_low_n_voxels)=[];
+
+if strcmp(par,'Rsoma')
+    reshaped_medians_rsoma_tot(:,idx_low_n_voxels)=[];
+    labels_tot(idx_high_var_rsoma)=[];
+    reshaped_medians_CBF_tot(:,idx_high_var_rsoma)=[];
+    reshaped_medians_CMRO2_tot(:,idx_high_var_rsoma)=[];
+    reshaped_medians_rsoma_tot(:,idx_high_var_rsoma)=[];
+elseif strcmp(par,'fsoma')
+    reshaped_medians_fsoma_tot(:,idx_low_n_voxels)=[];
+    labels_tot(idx_high_var_fsoma)=[];
+    reshaped_medians_CBF_tot(:,idx_high_var_fsoma)=[];
+    reshaped_medians_CMRO2_tot(:,idx_high_var_fsoma)=[];
+    reshaped_medians_fsoma_tot(:,idx_high_var_fsoma)=[];
+elseif strcmp(par,'fsup')
+    reshaped_medians_fsup_tot(:,idx_low_n_voxels)=[];
+    labels_tot(idx_high_var_fsup)=[];
+    reshaped_medians_CBF_tot(:,idx_high_var_fsup)=[];
+    reshaped_medians_CMRO2_tot(:,idx_high_var_fsup)=[];
+    reshaped_medians_fsup_tot(:,idx_high_var_fsup)=[];
 end
 
 %% GLM
@@ -3869,12 +4048,12 @@ ylabel(dependent_parameter,'FontSize',15,'FontWeight','bold');
 s.LineWidth = 0.6;
 s.MarkerEdgeColor = 'b';
 s.MarkerFaceColor = [0 0.5 0.5];
-n_subjs_str=num2str(n_subjs);
+%n_subjs_str=num2str(n_subjs);
 if p(2)<0.05 && p(2)>0.01    
     txt = {strcat('r = ',corr_coef_str,'*')};
 elseif p(2)<0.01 && p(2)>0.001   
     txt = {strcat('r = ',corr_coef_str,'**')};
-else
+elseif p(2)<0.001
     txt = {strcat('r = ',corr_coef_str,'***')};
 end
 % text(60,12,txt,'FontWeight', 'Bold');
@@ -3909,8 +4088,29 @@ grid on
 
 
 
-
-
-
-
-
+% corr_for_each_subj_fsoma_CBF(26)=[];
+% corr_for_each_subj_fsoma_CMRO2(26)=[];
+% corr_for_each_subj_fsup_CBF(26)=[];
+% corr_for_each_subj_fsup_CMRO2(26)=[];
+% corr_for_each_subj_rsoma_CBF(26)=[];
+% corr_for_each_subj_rsoma_CMRO2(26)=[];
+% 
+% n_voxels_lst_allsubjs(26,:)=[];
+% 
+% pvalue_for_each_subj_fsoma_CBF(26)=[];
+% pvalue_for_each_subj_fsoma_CMRO2(26)=[];
+% pvalue_for_each_subj_fsup_CBF(26)=[];
+% pvalue_for_each_subj_fsup_CMRO2(26)=[];
+% pvalue_for_each_subj_rsoma_CBF(26)=[];
+% pvalue_for_each_subj_rsoma_CMRO2(26)=[];
+% 
+% reshaped_medians_CBF(26,:)=[];
+% reshaped_medians_CMRO2(26,:)=[];
+% reshaped_medians_De(26,:)=[];
+% reshaped_medians_Din(26,:)=[];
+% reshaped_medians_fc(26,:)=[];
+% reshaped_medians_fextra(26,:)=[];
+% reshaped_medians_fneurite(26,:)=[];
+% reshaped_medians_fsoma(26,:)=[];
+% reshaped_medians_fsup(26,:)=[];
+% reshaped_medians_rsoma(26,:)=[];
