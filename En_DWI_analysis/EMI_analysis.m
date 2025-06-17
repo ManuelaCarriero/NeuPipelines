@@ -182,14 +182,14 @@ for i = 1:n_subjs
 
 end
 
-V_fsup_one=V_fsup_tots{1};
-figure, imagesc(rot90(V_fsup_one(:,:,45)));
-title('Superficial Soma Density map')
-V_fsup_one_array=V_fsup_one(:);
-
-figure, hist(V_fsup_one_array);
-title('Superficial Soma Density Distribution');
-grid on
+% V_fsup_one=V_fsup_tots{1};
+% figure, imagesc(rot90(V_fsup_one(:,:,45)));
+% title('Superficial Soma Density map')
+% V_fsup_one_array=V_fsup_one(:);
+% 
+% figure, hist(V_fsup_one_array);
+% title('Superficial Soma Density Distribution');
+% grid on
 
 %% Estimate regional medians
 
@@ -1278,3 +1278,520 @@ height=450;
 set(gcf,'position',[x0,y0,width,height])
 grid on
 
+%% Method II (remove zeros of binary maps)
+V_GM = V_GM_tot;
+V_GM(V_GM>0.5)=1;
+V_GM(V_GM<1)=0;
+GM_zeros=find(V_GM==0);
+
+regions = unique(V_atlas_tot(:));
+n_regions = numel(regions);
+
+medians_CBF = [];
+medians_CMRO2 = [];
+medians_fc= [];
+medians_fextra= [];
+medians_fneurite = [];
+medians_fsoma= [];
+medians_Din = [];
+medians_De =[];
+medians_rsoma = [];
+medians_fsup = [];
+
+
+reshaped_medians_CBF=[];
+reshaped_medians_CMRO2=[];
+reshaped_medians_De = [];
+reshaped_medians_rsoma = [];
+reshaped_medians_fsoma = [];
+reshaped_medians_fneurite = [];
+reshaped_medians_fextra = [];
+reshaped_medians_Din = [];
+reshaped_medians_fc = [];
+reshaped_medians_fsup = [];
+
+n_voxels_lst = [];
+n_voxels_lst_allsubjs=[];
+
+corr_for_each_subj_rsoma_CBF=[];
+pvalue_for_each_subj_rsoma_CBF=[];
+corr_for_each_subj_fsoma_CBF=[];
+pvalue_for_each_subj_fsoma_CBF=[];
+corr_for_each_subj_fsup_CBF=[];
+pvalue_for_each_subj_fsup_CBF=[];
+
+corr_for_each_subj_rsoma_CMRO2=[];
+pvalue_for_each_subj_rsoma_CMRO2=[];
+corr_for_each_subj_fsoma_CMRO2=[];
+pvalue_for_each_subj_fsoma_CMRO2=[];
+corr_for_each_subj_fsup_CMRO2=[];
+pvalue_for_each_subj_fsup_CMRO2=[];
+
+tic
+for i = 1:1:n_subjs %1:1:length(lst)
+    
+    V_CBF_tot = V_CBF_tots{i};
+    V_CMRO2_tot = V_CMRO2_tots{i};
+    V_fc_tot = V_fc_tots{i};
+    V_fsoma_tot = V_fsoma_tots{i};
+    V_fneurite_tot = V_fneurite_tots{i};
+    V_fextra_tot = V_fextra_tots{i};
+    V_Din_tot = V_Din_tots{i};
+    V_De_tot = V_De_tots{i};
+    V_rsoma_tot = V_rsoma_tots{i};
+    V_fsup_tot = V_fsup_tots{i};
+
+    medians_CBF=[];
+    medians_CMRO2=[];
+    medians_fsoma=[];
+    medians_fc=[];
+    medians_fneurite=[];
+    medians_fextra=[];
+    medians_Din=[];
+    medians_De=[];
+    medians_rsoma=[];
+    medians_fsup=[];
+
+    n_voxels_lst=[];
+
+    for k = 2:numel(regions)
+        tic
+
+
+        V_atlas = V_atlas_tot;
+
+        for ii = 1:length(V_atlas_tot(:))
+            if V_atlas_tot(ii)==regions(k)
+                V_atlas(ii)=1;
+            else
+                V_atlas(ii)=0;
+            end
+        end
+
+        atlas_zeros=find(V_atlas==0);
+
+        
+        V_CBF = V_CBF_tot;
+        V_CMRO2 = V_CMRO2_tot;
+        V_fc = V_fc_tot;
+        V_fextra = V_fextra_tot;
+        V_fneurite = V_fneurite_tot;
+        V_rsoma = V_rsoma_tot;
+        V_fsoma = V_fsoma_tot;
+        V_Din = V_Din_tot;
+        V_De = V_De_tot;
+        V_fsup = V_fsup_tot;
+        V_fsoma_to_mask=V_fsoma_tot;
+
+        
+        V_fsoma_to_mask(V_fsoma_to_mask>0.15)=1;
+        V_fsoma_to_mask(V_fsoma_to_mask<1)=0;
+        fsoma_zeros=find(V_fsoma_to_mask==0);
+
+        V_CBF_atlas = V_CBF.*V_atlas.*V_fsoma_to_mask;
+        V_CMRO2_atlas = V_CMRO2.*V_atlas.*V_fsoma_to_mask;
+        V_fc_atlas = V_fc.*V_atlas.*V_fsoma_to_mask;
+        V_fextra_atlas = V_fextra.*V_atlas.*V_fsoma_to_mask;
+        V_fneurite_atlas = V_fneurite.*V_atlas.*V_fsoma_to_mask;
+        V_rsoma_atlas = V_rsoma.*V_atlas.*V_fsoma_to_mask;
+        V_fsoma_atlas = V_fsoma.*V_atlas.*V_fsoma_to_mask;
+        V_Din_atlas = V_Din.*V_atlas.*V_fsoma_to_mask;
+        V_De_atlas = V_De.*V_atlas.*V_fsoma_to_mask;
+        V_fsup_atlas = V_fsup.*V_atlas.*V_fsoma_to_mask;
+
+
+
+        V_CBF_masked = V_CBF_atlas.*V_GM;
+        V_CMRO2_masked = V_CMRO2_atlas.*V_GM;
+        V_fc_masked = V_fc_atlas.*V_GM;
+        V_fextra_masked = V_fextra_atlas.*V_GM;
+        V_fneurite_masked = V_fneurite_atlas.*V_GM;
+        V_rsoma_masked = V_rsoma_atlas.*V_GM;
+        V_fsoma_masked = V_fsoma_atlas.*V_GM;
+        V_Din_masked = V_Din_atlas.*V_GM;
+        V_De_masked = V_De_atlas.*V_GM;
+        V_fsup_masked = V_fsup_atlas.*V_GM;
+
+        V_CBF_masked = V_CBF_masked(:);
+        V_CMRO2_masked = V_CMRO2_masked(:);
+        V_fc_masked = V_fc_masked(:);
+        V_fextra_masked = V_fextra_masked(:);
+        V_fneurite_masked = V_fneurite_masked(:);
+        V_rsoma_masked = V_rsoma_masked(:);
+        V_fsoma_masked = V_fsoma_masked(:);
+        V_Din_masked = V_Din_masked(:);
+        V_De_masked = V_De_masked(:);
+        V_fsup_masked = V_fsup_masked(:);
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+ 
+
+        disp(strcat('region', num2str(k)))
+
+
+        v_CBF_masked=V_CBF_masked;
+        v_CMRO2_masked=V_CMRO2_masked;
+        v_fc_masked=V_fc_masked;
+        v_fsoma_masked=V_fsoma_masked;
+        v_fsup_masked=V_fsup_masked;
+        v_rsoma_masked=V_rsoma_masked;
+        v_fneurite_masked=V_fneurite_masked;
+        v_fextra_masked=V_fextra_masked;
+        v_Din_masked=V_Din_masked;
+        v_De_masked=V_De_masked;
+
+        tot_zeros=cat(2,GM_zeros',fsoma_zeros',atlas_zeros');
+        tot_zeros_unique=unique(tot_zeros);
+
+        v_CBF_masked(tot_zeros_unique)=[];
+        v_CMRO2_masked(tot_zeros_unique)=[];
+        v_fc_masked(tot_zeros_unique)=[];
+        v_fsoma_masked(tot_zeros_unique)=[];
+        v_rsoma_masked(tot_zeros_unique)=[];
+        v_fsup_masked(tot_zeros_unique)=[];
+        v_fneurite_masked(tot_zeros_unique)=[];
+        v_fextra_masked(tot_zeros_unique)=[];
+        v_Din_masked(tot_zeros_unique)=[];
+        v_De_masked(tot_zeros_unique)=[];
+
+
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        n_voxels = numel(v_CBF_masked);%In this case it is not the same for all parameters
+      
+        n_voxels_lst(end+1) = n_voxels;
+
+        median_CBF = median(v_CBF_masked,'omitnan');
+        median_CMRO2 = median(v_CMRO2_masked,'omitnan');
+        median_fc = median(v_fc_masked,'omitnan');
+        median_fextra = median(v_fextra_masked,'omitnan');
+        median_fneurite = median(v_fneurite_masked,'omitnan');
+        median_fsoma = median(v_fsoma_masked,'omitnan');
+        median_rsoma = median(v_rsoma_masked,'omitnan');
+        median_Din = median(v_Din_masked,'omitnan');
+        median_De = median(v_De_masked,'omitnan');
+        median_fsup=median(v_fsup_masked,'omitnan');
+
+        medians_CBF(end+1) = median_CBF;
+        medians_CMRO2(end+1) = median_CMRO2;
+        medians_fc(end+1) = median_fc;
+        medians_fextra(end+1) = median_fextra;
+        medians_fneurite(end+1) = median_fneurite;
+        medians_fsoma(end+1) = median_fsoma;
+        medians_Din(end+1) = median_Din;
+        medians_De(end+1) = median_De;
+        medians_rsoma(end+1) = median_rsoma;
+        medians_fsup(end+1) = median_fsup;
+
+        
+    toc
+    end
+
+    n_voxels_lst_allsubjs(i,:) = n_voxels_lst;
+
+    reshaped_medians_CBF(i,:) = medians_CBF;
+    reshaped_medians_CMRO2(i,:) = medians_CMRO2;
+    reshaped_medians_fc(i,:) = medians_fc;
+    reshaped_medians_fsoma(i,:) = medians_fsoma;
+    reshaped_medians_rsoma(i,:) = medians_rsoma;
+    reshaped_medians_fextra(i,:) = medians_fextra;
+    reshaped_medians_fneurite(i,:) = medians_fneurite;
+    reshaped_medians_Din(i,:) = medians_Din;
+    reshaped_medians_De(i,:) = medians_De;
+    reshaped_medians_fsup(i,:) = medians_fsup;
+
+    [r_rsoma_CBF,p_rsoma_CBF] = corrcoef(medians_CBF, medians_rsoma, 'rows','complete');
+    [r_fsoma_CBF,p_fsoma_CBF] = corrcoef(medians_CBF, medians_fsoma, 'rows','complete');
+    [r_fsup_CBF,p_fsup_CBF] = corrcoef(medians_CBF, medians_fsup, 'rows','complete');
+
+    [r_rsoma_CMRO2,p_rsoma_CMRO2] = corrcoef(medians_CMRO2, medians_rsoma, 'rows','complete');
+    [r_fsoma_CMRO2,p_fsoma_CMRO2] = corrcoef(medians_CMRO2, medians_fsoma, 'rows','complete');
+    [r_fsup_CMRO2,p_fsup_CMRO2] = corrcoef(medians_CMRO2, medians_fsup, 'rows','complete');
+
+    corr_for_each_subj_rsoma_CBF(i)=r_rsoma_CBF(2);
+    pvalue_for_each_subj_rsoma_CBF(i)=p_rsoma_CBF(2);
+
+    corr_for_each_subj_fsoma_CBF(i)=r_fsoma_CBF(2);
+    pvalue_for_each_subj_fsoma_CBF(i)=p_fsoma_CBF(2);
+
+    corr_for_each_subj_fsup_CBF(i)=r_fsup_CBF(2);
+    pvalue_for_each_subj_fsup_CBF(i)=p_fsup_CBF(2);
+
+    corr_for_each_subj_rsoma_CMRO2(i)=r_rsoma_CMRO2(2);
+    pvalue_for_each_subj_rsoma_CMRO2(i)=p_rsoma_CMRO2(2);
+
+    corr_for_each_subj_fsoma_CMRO2(i)=r_fsoma_CMRO2(2);
+    pvalue_for_each_subj_fsoma_CMRO2(i)=p_fsoma_CMRO2(2);
+
+    corr_for_each_subj_fsup_CMRO2(i)=r_fsup_CMRO2(2);
+    pvalue_for_each_subj_fsup_CMRO2(i)=p_fsup_CMRO2(2);
+
+    disp(strcat('Finished subject', num2str(i),'Starting subject', num2str(i+1)))
+
+end
+toc
+
+%% select parameters to investigate
+par='Rsoma'; 
+%the energy consumption parameter has to be selected for a plotting reason
+%(both CBF and CMRO2 are processed anyway)
+energy_par='CMRO2';
+
+%% for each subj 
+
+
+if strcmp(par,'Rsoma') && strcmp(energy_par,'CBF')
+    corr_for_each_subj=corr_for_each_subj_rsoma_CBF;
+elseif strcmp(par,'fsoma') && strcmp(energy_par,'CBF')
+    corr_for_each_subj=corr_for_each_subj_fsoma_CBF;
+elseif strcmp(par,'fsup') && strcmp(energy_par,'CBF')
+    corr_for_each_subj=corr_for_each_subj_fsup_CBF;
+elseif strcmp(par,'Rsoma') && strcmp(energy_par,'CMRO2')
+    corr_for_each_subj=corr_for_each_subj_rsoma_CMRO2;
+elseif strcmp(par,'fsoma') && strcmp(energy_par,'CMRO2')
+    corr_for_each_subj=corr_for_each_subj_fsup_CMRO2;
+elseif strcmp(par,'fsup') && strcmp(energy_par,'CMRO2')
+    corr_for_each_subj=corr_for_each_subj_fsup_CMRO2;
+end
+
+mean_with_subjs_corr=nanmean(corr_for_each_subj);%why do we have NaNs?
+[h,p,ci,stats]=ttest(atanh(corr_for_each_subj));
+
+
+mean_corr=round(mean_with_subjs_corr,2);
+mean_corr=num2str(mean_corr);
+
+pvalue=num2str(round(p,2));
+
+
+figure, 
+s=histogram(corr_for_each_subj,'FaceAlpha',1,'BinWidth',0.07);
+s.FaceColor="b";
+xlabel('correlation coefficient, r','FontWeight','bold','FontSize',15);
+ylabel('Counts (# subjects)','FontWeight','bold','FontSize',15);
+ylim([0,14]);
+xline(0,'--','LineWidth',3);
+if p<0.05 && p>0.01    
+    txt = {strcat('\mu_r = ',mean_corr,'*')};
+elseif p<0.01 && p>0.001   
+    txt = {strcat('\mu_r = ',mean_corr,'**')};
+else
+    txt = {strcat('\mu_r = ',mean_corr,'***')};
+end
+
+title(strcat(energy_par, 'vs',par));
+text(0.5,7,txt, 'FontWeight', 'bold','FontSize',15);
+grid on
+%% average across subjects
+
+mean_CMRO2_tot = nanmean(reshaped_medians_CMRO2,1);
+mean_CBF_tot = nanmean(reshaped_medians_CBF,1);
+mean_fc_tot = nanmean(reshaped_medians_fc,1);
+mean_fextra_tot = nanmean(reshaped_medians_fextra,1);
+mean_fneurite_tot = nanmean(reshaped_medians_fneurite,1);
+mean_fsoma_tot = nanmean(reshaped_medians_fsoma,1);
+mean_rsoma_tot = nanmean(reshaped_medians_rsoma,1);
+mean_Din_tot = nanmean(reshaped_medians_Din,1);
+mean_De_tot = nanmean(reshaped_medians_De,1);
+mean_fsup_tot = nanmean(reshaped_medians_fsup,1);
+
+n=numel(reshaped_medians_CMRO2(:,1));%you can choose any parameter
+
+SE_CMRO2_tot = nanstd(reshaped_medians_CMRO2,0,1)/sqrt(n);
+SE_CBF_tot = nanstd(reshaped_medians_CBF,0,1)/sqrt(n);
+SE_fc_tot = nanstd(reshaped_medians_fc,0,1)/sqrt(n);
+SE_fextra_tot = nanstd(reshaped_medians_fextra,0,1)/sqrt(n);
+SE_fneurite_tot = nanstd(reshaped_medians_fneurite,0,1)/sqrt(n);
+SE_fsoma_tot = nanstd(reshaped_medians_fsoma,0,1)/sqrt(n);
+SE_rsoma_tot = nanstd(reshaped_medians_rsoma,0,1)/sqrt(n);
+SE_Din_tot = nanstd(reshaped_medians_Din,0,1)/sqrt(n);
+SE_De_tot = nanstd(reshaped_medians_De,0,1)/sqrt(n);
+SE_fsup_tot = nanstd(reshaped_medians_fsup,0,1)/sqrt(n);
+
+var_rsoma=SE_rsoma_tot./mean_rsoma_tot;
+var_fsoma=SE_fsoma_tot./mean_fsoma_tot;
+var_fc=SE_fc_tot./mean_fc_tot;
+var_fneurite=SE_fneurite_tot./mean_fneurite_tot;
+var_fextra=SE_fextra_tot./mean_fextra_tot;
+var_Din=SE_Din_tot./mean_Din_tot;
+var_De=SE_De_tot./mean_De_tot;
+var_fsup=SE_fsup_tot./mean_fsup_tot;
+
+mean_n_voxels_tot = mean(n_voxels_lst_allsubjs,1);
+regions=1:numel(mean_CMRO2_tot);
+mean_n_voxels=mean_n_voxels_tot;
+% 
+% figure, bar(regions,mean_n_voxels_tot);
+% xlabel('regions','FontSize',15);
+% ylabel('mean number of voxels','FontSize',15);
+
+
+idx_low_n_voxels=[];
+for i=1:numel(regions)
+    if mean_n_voxels_tot(i)<prctile(mean_n_voxels_tot,40)%mean(mean_n_voxels)/5 %CHECK
+        idx_low_n_voxels(end+1)=i;
+    end
+end
+
+
+labels_tot=unique(V_atlas_tot(:));
+labels=labels_tot;
+labels(idx_low_n_voxels)=[];
+mean_n_voxels=mean_n_voxels_tot;
+mean_n_voxels(idx_low_n_voxels)=[];
+
+mean_CBF_tot(idx_low_n_voxels)=[];
+mean_CMRO2_tot(idx_low_n_voxels)=[];
+mean_fc_tot(idx_low_n_voxels)=[];
+mean_fextra_tot(idx_low_n_voxels)=[];
+mean_fneurite_tot(idx_low_n_voxels)=[];
+mean_fsoma_tot(idx_low_n_voxels)=[];
+mean_rsoma_tot(idx_low_n_voxels)=[];
+mean_Din_tot(idx_low_n_voxels)=[];
+mean_De_tot(idx_low_n_voxels)=[];
+mean_fsup_tot(idx_low_n_voxels)=[];
+
+%this is to plot errors on both x and y values
+SE_rsoma_tot(idx_low_n_voxels)=[];
+SE_fsoma_tot(idx_low_n_voxels)=[];
+SE_fsup_tot(idx_low_n_voxels)=[];
+SE_CBF_tot(idx_low_n_voxels)=[];
+SE_CMRO2_tot(idx_low_n_voxels)=[];
+
+%this is to calculate coefficient of variation 
+var_rsoma(idx_low_n_voxels)=[];
+var_fsoma(idx_low_n_voxels)=[];
+var_fextra(idx_low_n_voxels)=[];
+var_fneurite(idx_low_n_voxels)=[];
+var_fc(idx_low_n_voxels)=[];
+var_De(idx_low_n_voxels)=[];
+var_Din(idx_low_n_voxels)=[];
+var_fsup(idx_low_n_voxels)=[];
+
+%idx_high_SE=find(SE_rsoma_tot>prctile(SE_rsoma_tot,95));
+%For now we used GM parameters
+idx_high_var_rsoma=find(var_rsoma>prctile(var_rsoma,75));
+idx_high_var_fsoma=find(var_fsoma>prctile(var_fsoma,75));
+idx_high_var_fsup=find(var_fsup>prctile(var_fsup,75));
+
+%% in order to do Energy vs one Microparameter analysis (run if corr analysis)
+
+if strcmp(par,'Rsoma')
+    mean_CBF_tot(idx_high_var_rsoma)=[];
+    mean_CMRO2_tot(idx_high_var_rsoma)=[];
+    mean_rsoma_tot(idx_high_var_rsoma) = [];
+    SE_rsoma_tot(idx_high_var_rsoma)=[];
+    SE_CBF_tot(idx_high_var_rsoma)=[];
+    SE_CMRO2_tot(idx_high_var_rsoma)=[];
+elseif strcmp(par,'fsoma')
+    mean_CBF_tot(idx_high_var_fsoma)=[];
+    mean_CMRO2_tot(idx_high_var_fsoma)=[];
+    mean_fsoma_tot(idx_high_var_fsoma)=[];
+    SE_fsoma_tot(idx_high_var_fsoma)=[];
+    SE_CBF_tot(idx_high_var_fsoma)=[];
+    SE_CMRO2_tot(idx_high_var_fsoma)=[];
+elseif strcmp(par,'fsup')
+    mean_CBF_tot(idx_high_var_fsup)=[];
+    mean_CMRO2_tot(idx_high_var_fsup)=[];
+    mean_fsup_tot(idx_high_var_fsup)=[];
+    SE_fsup_tot(idx_high_var_fsup)=[];
+    SE_CBF_tot(idx_high_var_fsup)=[];  
+    SE_CMRO2_tot(idx_high_var_fsup)=[]; 
+end
+
+%% plot energy vs microparameter 
+
+if strcmp(par,'Rsoma')
+    mean_SANDI=mean_rsoma_tot;
+    SE_SANDI_tot=SE_rsoma_tot;
+elseif strcmp(par,'fsoma')
+    mean_SANDI=mean_fsoma_tot;
+    SE_SANDI_tot=SE_fsoma_tot;
+elseif strcmp(par,'fsup')
+    mean_SANDI=mean_fsup_tot;
+    SE_SANDI_tot=SE_fsup_tot;
+end
+
+if strcmp(energy_par,'CBF')
+    mean_energy_tot=mean_CBF_tot;
+    dependent_parameter='CBF (ml/100g/min)';
+    SE_energy_tot=SE_CBF_tot;
+elseif strcmp(energy_par,'CMRO2')
+    mean_energy_tot=mean_CMRO2_tot;
+    dependent_parameter='CMRO_2 (\mu mol/100g/min)';
+    SE_energy_tot=SE_CMRO2_tot;
+end
+
+% if any(isnan(mean_SANDI))%fsup can have some NaN values
+%     idx=find(isnan(mean_SANDI));
+%     mean_SANDI(idx)=[];
+%     mean_energy_nanparremoved=mean_energy_tot;
+%     mean_energy_nanparremoved(idx)=[];
+%     SE_energy_tot(idx)=[];
+%     SE_SANDI_tot(idx)=[];
+% else
+%     mean_energy_nanparremoved=mean_energy_tot;
+% end
+% % mean_fsoma=nanmean(reshaped_medians_fsoma,1);
+% % mean_energy=nanmean(reshaped_medians_energy,1);
+% % 
+% % n
+% % SE_energy = nanstd(reshaped_medians_energy,0,1)/sqrt(numel(reshaped_medians_energy(:,1)));
+% % SE_SANDI = nanstd(reshaped_medians_fsoma,0,1)/sqrt(numel(reshaped_medians_energy(:,1)));
+
+[r,p] = corrcoef(mean_energy_tot, mean_SANDI, 'rows','complete');
+
+corr_coef = round(r(2),2);
+p_value = p(2);
+corr_coef_str = num2str(corr_coef);
+p_value_str = num2str(p_value);
+
+P = polyfit(mean_SANDI,mean_energy_tot,1);
+yfit_energy = P(1)*mean_SANDI+P(2);
+
+
+
+
+figure, 
+s = errorbar(mean_SANDI, mean_energy_tot, SE_energy_tot, SE_energy_tot, SE_SANDI_tot, SE_SANDI_tot,'o');
+hold on
+plot(mean_SANDI,yfit_energy,'--','LineWidth',3,'Color',"#000000");
+xlabel(strcat(par),'FontSize',15,'FontWeight','bold');
+ylabel(dependent_parameter,'FontSize',15,'FontWeight','bold');
+s.LineWidth = 0.6;
+s.MarkerEdgeColor = 'b';
+s.MarkerFaceColor = [0 0.5 0.5];
+%n_subjs_str=num2str(n_subjs);
+if p(2)<0.05 && p(2)>0.01    
+    txt = {strcat('r = ',corr_coef_str,'*')};
+elseif p(2)<0.01 && p(2)>0.001   
+    txt = {strcat('r = ',corr_coef_str,'**')};
+elseif p(2)<0.001
+    txt = {strcat('r = ',corr_coef_str,'***')};
+end
+% text(60,12,txt,'FontWeight', 'Bold');
+%annotation('textbox',[.6,.2,.30,.13], 'String', txt, 'FontWeight', 'Bold','FontSize',15);
+if strcmp(energy_par,'CBF') && strcmp(par,'Rsoma')
+    text(13.8,60,txt, 'FontWeight', 'bold','FontSize',12);
+elseif strcmp(energy_par,'CBF') && strcmp(par,'fsoma')
+    text(0.39,60,txt, 'FontWeight', 'bold','FontSize',12);
+elseif strcmp(energy_par,'CMRO2') && strcmp(par,'Rsoma')
+    text(13.8,140,txt, 'FontWeight', 'bold','FontSize',12);
+elseif strcmp(energy_par,'CMRO2') && strcmp(par,'fsoma')
+    text(0.39,140,txt, 'FontWeight', 'bold','FontSize',12);
+elseif strcmp(energy_par,'CMRO2') && strcmp(par,'fsup')
+    text(8*10^4,140,txt, 'FontWeight', 'bold','FontSize',12);
+elseif strcmp(energy_par,'CBF') && strcmp(par,'fsup')
+    text(8*10^4,60,txt, 'FontWeight', 'bold','FontSize',12);
+end
+set(get(gca, 'XAxis'), 'FontWeight', 'bold');
+set(get(gca, 'YAxis'), 'FontWeight', 'bold');
+set(gca,'box','off')
+x0=400;
+y0=400;
+width=550;
+height=450;
+set(gcf,'position',[x0,y0,width,height]);
+grid on
