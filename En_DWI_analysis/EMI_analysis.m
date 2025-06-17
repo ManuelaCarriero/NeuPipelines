@@ -1327,6 +1327,9 @@ pvalue_for_each_subj_fsoma_CMRO2=[];
 corr_for_each_subj_fsup_CMRO2=[];
 pvalue_for_each_subj_fsup_CMRO2=[];
 
+CBF_zeros_brain_subjs=[];
+CMRO2_zeros_brain_subjS=[];
+
 tic
 for i = 1:1:n_subjs %1:1:length(lst)
     
@@ -1388,6 +1391,10 @@ for i = 1:1:n_subjs %1:1:length(lst)
         V_fsoma_to_mask(V_fsoma_to_mask<1)=0;
         fsoma_zeros=find(V_fsoma_to_mask==0);
 
+
+
+        
+
         V_CBF_atlas = V_CBF.*V_atlas.*V_fsoma_to_mask;
         V_CMRO2_atlas = V_CMRO2.*V_atlas.*V_fsoma_to_mask;
         V_fc_atlas = V_fc.*V_atlas.*V_fsoma_to_mask;
@@ -1443,6 +1450,8 @@ for i = 1:1:n_subjs %1:1:length(lst)
 
         tot_zeros=cat(2,GM_zeros',fsoma_zeros',atlas_zeros');
         tot_zeros_unique=unique(tot_zeros);
+
+
 
         v_CBF_masked(tot_zeros_unique)=[];
         v_CMRO2_masked(tot_zeros_unique)=[];
@@ -1795,3 +1804,39 @@ width=550;
 height=450;
 set(gcf,'position',[x0,y0,width,height]);
 grid on
+
+%%
+%Test if CBF and CMRO2 distribution
+%in the GM is correct (save hist fig) and if
+%there are zeros in the brain regions (save into energy_zeros_brain_subjs)
+
+for i = 1:1:n_subjs %1:1:length(lst)
+    
+    V_CBF_tot = V_CBF_tots{i};
+    V_CMRO2_tot = V_CMRO2_tots{i};
+    V_fc_tot = V_fc_tots{i};
+    V_fsoma_tot = V_fsoma_tots{i};
+    V_fneurite_tot = V_fneurite_tots{i};
+    V_fextra_tot = V_fextra_tots{i};
+    V_Din_tot = V_Din_tots{i};
+    V_De_tot = V_De_tots{i};
+    V_rsoma_tot = V_rsoma_tots{i};
+    V_fsup_tot = V_fsup_tots{i};
+
+    V_CBF_GM=V_CBF.*V_GM;
+    V_CMRO2_GM=V_CMRO2.*V_GM;
+    V_CBF_GM(GM_zeros)=[];
+    V_CMRO2_GM(GM_zeros)=[];
+    %fig_CBF=figure('visible','off');
+    figure,
+    hist(V_CBF_GM);
+    saveas(fig_CBF, strcat('CBF_subj',num2str(i),'.png'));
+    %fig_CMRO2=figure('visible','off');
+    figure,
+    hist(V_CMRO2_GM);
+    saveas(fig_CMRO2, strcat('CMRO2_subj',num2str(i),'.png'));
+    CBF_zeros_brain_subj=numel(find(V_CBF_GM==0));
+    CMRO2_zeros_brain_subj=numel(find(V_CMRO2_GM==0));
+    CBF_zeros_brain_subjs(i) = CBF_zeros_brain_subj;
+    CMRO2_zeros_brain_subj(i) = CMRO2_zeros_brain_subj;
+end
