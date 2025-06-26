@@ -13,24 +13,56 @@ fsoma_tr=fsoma_scored';
 rsoma_tr=rsoma_scored';
 fsup_tr=fsup_scored';
 
+%% Bootstrapping to obtain a distribution of beta values and the error
+%This is to create the random data stream for reproducibility
+for i=1:100
+    disp(i)
+    s=RandStream('mlfg6331_64','Seed',i);
+    energy_sampled = datasample(s, energy_tr, length(energy_tr),'Replace',true);
+    rsoma_sampled = datasample(s, rsoma_tr, length(rsoma_tr),'Replace',true);
+    fsoma_sampled = datasample(s, fsoma_tr, length(fsoma_tr),'Replace',true);
+    fsup_sampled = datasample(s, fsup_tr, length(fsup_tr),'Replace',true);
 
 
-y = energy_tr;
-X = [rsoma_tr fsoma_tr fsup_tr]; %
-%X=[x_rsoma  x_fsoma x_Din x_fextra x_fneurite x_De]; 
-
-%nested cross validation 
-size_x=size(X);
-ncomp=size_x(2);%ncomp<=nvariables
-
-[XL,yl,XS,YS,beta,PCTVAR,MSE,stats] = plsregress(X,y,ncomp); %with n_comp=1 fsoma is positive as we expect from corr.
-
-%k-fold cross validation to select the right number of components
-[XL,yl,XS,YS,beta,PCTVAR,PLSmsep] = plsregress(X,y,ncomp,'CV',10);
+    y = energy_sampled;
+    X = [rsoma_sampled fsoma_sampled fsup_sampled];
 
 
+    size_x=size(X);
+    ncomp=size_x(2);%ncomp<=nvariables
 
+    [XL,yl,XS,YS,beta,PCTVAR,MSE,stats] = plsregress(X,y,ncomp); %with n_comp=1 fsoma is positive as we expect from corr.
 
+    %nested cross validation
+    %k-fold cross validation to select the right number of components
+    [XL,yl,XS,YS,beta,PCTVAR,PLSmsep] = plsregress(X,y,ncomp,'CV',10);
+
+    min_err=min(PLSmsep(2,:));
+    idx=find(PLSmsep(2,:)==min_err);
+    new_ncomp=idx-1;
+
+    if new_ncomp<=0
+        beta_rsoma(i)=NaN;
+        beta_fsoma(i)=NaN;
+        beta_fsup(i)=NaN;
+    else
+
+    [XL,yl,XS,YS,beta,PCTVAR,MSE,stats] = plsregress(X,y,new_ncomp);
+
+    beta_rsoma(i)=beta(2);
+    beta_fsoma(i)=beta(3);
+    beta_fsup(i)=beta(4);
+    end
+
+end
+
+beta_fsoma(isnan(beta_fsoma))=[];
+beta_rsoma(isnan(beta_rsoma))=[];
+beta_fsup(isnan(beta_fsup))=[];
+
+figure, hist(beta_fsoma);
+figure, hist(beta_rsoma);
+figure, hist(beta_fsup);
 
 figure,
 plot(0:ncomp,PLSmsep(2,:),'b-o');
