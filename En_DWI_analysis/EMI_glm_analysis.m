@@ -15,7 +15,7 @@ fsup_tr=fsup_scored';
 
 %% Bootstrapping to obtain a distribution of beta values and the error
 %This is to create the random data stream for reproducibility
-for i=1:100
+for i=1:1000
     disp(i)
     s=RandStream('mlfg6331_64','Seed',i);
     energy_sampled = datasample(s, energy_tr, length(energy_tr),'Replace',true);
@@ -63,6 +63,49 @@ beta_fsup(isnan(beta_fsup))=[];
 figure, hist(beta_fsoma);
 figure, hist(beta_rsoma);
 figure, hist(beta_fsup);
+
+%For the central limit theorem, the mean has to converge to zero
+mean_beta_fsoma=mean(beta_fsoma);
+mean_beta_rsoma=mean(beta_rsoma);
+mean_beta_fsup=mean(beta_fsup);
+
+%Calculate the expectation value
+micro_parameter='fsup';
+if strcmp(micro_parameter,'fsoma')
+    beta=beta_fsoma;
+elseif strcmp(micro_parameter,'Rsoma')
+    beta=beta_rsoma;
+elseif strcmp(micro_parameter,'fsup')
+    beta=beta_fsup;
+end
+
+[N,edge]=histcounts(beta);
+length(edge)
+means=[];
+for i=1:length(edge)
+    if i < length(edge)
+     mean=(edge(i)+edge(i+1))/2;
+     means(i)=mean;
+    else
+        break
+    end
+end
+
+if strcmp(micro_parameter,'fsoma')   
+    weighted_fsoma=means.*N;
+    E_fsoma=sum(weighted_fsoma)./sum(N);%-0.0054
+elseif strcmp(micro_parameter,'Rsoma')
+    weighted_rsoma=means.*N;
+    E_Rsoma=sum(weighted_rsoma)./sum(N);%-0.0207
+elseif strcmp(micro_parameter,'fsup')
+    weighted_fsup=means.*N;
+    E_fsup=sum(weighted_fsup)./sum(N);%0.0038
+end
+
+
+std_beta_fsoma=std(beta_fsoma);
+std_beta_rsoma=std(beta_rsoma);
+std_beta_fsup=std(beta_fsup);
 
 figure,
 plot(0:ncomp,PLSmsep(2,:),'b-o');
