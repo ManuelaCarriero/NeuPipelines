@@ -191,6 +191,258 @@ end
 % title('Superficial Soma Density Distribution');
 % grid on
 
+%%
+load('load_data.mat');
+
+%% The energy vs microstructural parameters relationship
+% in GM is first explored to exclude outliers 
+
+%choose the energy parameter: either CMRO2 or CBF
+energy_parameter='CBF';
+
+%% GM across subjects analysis
+medians_energy=[];
+medians_fsoma = [];
+medians_rsoma = [];
+medians_fc = [];
+medians_fsup = [];
+
+medians_fextra = [];
+medians_fneurite = [];
+medians_Din = [];
+medians_De = [];
+
+V_GM=V_GM_tot;
+V_GM(V_GM>0.5)=1;
+V_GM(V_GM<1)=0;
+
+for i = 1:1:n_subjs %here we loose information about the real number of subj
+    tic
+    if strcmp(energy_parameter,'CBF')
+        V_energy_tot = V_CBF_tots{i};
+    elseif strcmp(energy_parameter,'CMRO2')
+        V_energy_tot = V_CMRO2_tots{i};
+    end
+    V_fsoma_tot = V_fsoma_tots{i};
+    V_rsoma_tot = V_rsoma_tots{i};
+    V_fc_tot = V_fc_tots{i}; 
+    V_fsup_tot = V_fsup_tots{i}; 
+
+    V_fextra_tot = V_fextra_tots{i}; 
+    V_fneurite_tot = V_fneurite_tots{i}; 
+    V_Din_tot = V_Din_tots{i};
+    V_De_tot = V_De_tots{i};
+
+    V_fsoma_to_mask=V_fsoma_tot;
+    V_fsoma_to_mask(V_fsoma_to_mask>0.15)=1;
+    V_fsoma_to_mask(V_fsoma_to_mask<1)=0;
+
+    V_energy = V_energy_tot;
+    V_fsoma = V_fsoma_tot;
+    V_rsoma = V_rsoma_tot;
+    V_fc = V_fc_tot;
+    V_fsup = V_fsup_tot;
+
+    V_fextra = V_fextra_tot;
+    V_fneurite = V_fneurite_tot;
+    V_Din = V_Din_tot;
+    V_De = V_De_tot;
+
+    V_energy_masked = V_energy.*V_fsoma_to_mask.*V_GM;
+    V_fsoma_masked = V_fsoma.*V_fsoma_to_mask.*V_GM;
+    V_rsoma_masked = V_rsoma.*V_fsoma_to_mask.*V_GM;
+    V_fc_masked = V_fc.*V_fsoma_to_mask.*V_GM;
+    V_fsup_masked = V_fsup.*V_fsoma_to_mask.*V_GM;
+
+    V_fextra_masked = V_fextra.*V_fsoma_to_mask.*V_GM;
+    V_fneurite_masked = V_fneurite.*V_fsoma_to_mask.*V_GM;
+    V_Din_masked = V_Din.*V_fsoma_to_mask.*V_GM;
+    V_De_masked = V_De.*V_fsoma_to_mask.*V_GM;    
+
+    V_energy_masked_vec = V_energy_masked(:);
+    V_fsoma_masked_vec = V_fsoma_masked(:);
+    V_rsoma_masked_vec = V_rsoma_masked(:);
+    V_fc_masked_vec = V_fc_masked(:);
+    V_fsup_masked_vec = V_fsup_masked(:);
+
+    V_fextra_masked_vec = V_fextra_masked(:);
+    V_fneurite_masked_vec = V_fneurite_masked(:);
+    V_Din_masked_vec = V_Din_masked(:);
+    V_De_masked_vec = V_De_masked(:);
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    indices_energy = [];
+    indices_energy=find(V_energy_masked_vec<=0);
+
+
+    disp(strcat('Processing subj',num2str(i)))
+
+
+
+
+    V_energy_masked_vec(indices_energy)=[];
+    V_fsoma_masked_vec(indices_energy)=[];
+    V_rsoma_masked_vec(indices_energy)=[];
+    V_fc_masked_vec(indices_energy)=[];
+    V_fsup_masked_vec(indices_energy)=[];
+
+    V_fextra_masked_vec(indices_energy)=[];
+    V_fneurite_masked_vec(indices_energy)=[];
+    V_Din_masked_vec(indices_energy)=[];
+    V_De_masked_vec(indices_energy)=[];
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+    median_energy = nanmedian(V_energy_masked_vec);
+    median_fsoma = nanmedian(V_fsoma_masked_vec);
+    median_rsoma = nanmedian(V_rsoma_masked_vec);
+    median_fc = nanmedian(V_fc_masked_vec);
+    median_fsup = nanmedian(V_fsup_masked_vec);
+
+    median_fextra = nanmedian(V_fextra_masked_vec);
+    median_fneurite = nanmedian(V_fneurite_masked_vec);
+    median_Din = nanmedian(V_Din_masked_vec);
+    median_De = nanmedian(V_De_masked_vec);
+
+    medians_energy(end+1) = median_energy;
+    medians_fsoma(end+1) = median_fsoma;
+    medians_rsoma(end+1) = median_rsoma;
+    medians_fc(end+1) = median_fc;
+    medians_fsup(end+1) = median_fsup;
+
+    medians_fextra(end+1) = median_fextra;
+    medians_fneurite(end+1) = median_fneurite;
+    medians_Din(end+1) = median_Din;
+    medians_De(end+1) = median_De;
+
+    toc
+end
+
+%% 
+%if you want to run without for loop
+%micro_parameter='Rsoma';%other GM parameters: fsoma fsup 
+
+%% detect outlier
+
+outlier_idx=find(medians_energy>120);%200 FOR CMRO2
+
+
+medians_energy(outlier_idx)=[];
+
+medians_fsoma(outlier_idx)=[];
+medians_fsup(outlier_idx)=[];
+medians_rsoma(outlier_idx)=[];
+disp('outlier successfully removed')
+
+%%
+
+micro_parameters={'Rsoma' 'fsoma' 'fsup'};
+for i=1:numel(micro_parameters)
+    micro_parameter=micro_parameters{i};
+
+
+    
+    if strcmp(energy_parameter,'CMRO2')
+        dependent_parameter_label='CMRO_2(\mumol/100g/min)';
+    elseif strcmp(energy_parameter,'CBF')
+        dependent_parameter_label='CBF(ml/100g/min)';
+    end
+
+    if strcmp(micro_parameter,'Rsoma')
+        micro_parameter_label='Rsoma(\mum)';
+        medians_SANDI=medians_rsoma;
+    elseif strcmp(micro_parameter,'fsoma')
+        micro_parameter_label='fsoma';
+        medians_SANDI=medians_fsoma;
+    elseif strcmp(micro_parameter,'fsup')
+        micro_parameter_label='fsup(m^{-1})';
+        medians_SANDI=medians_fsup;
+    elseif strcmp(micro_parameter,'fc')
+        micro_parameter_label='fc(m^{-3})';
+        medians_SANDI=medians_fc;
+    end
+
+    
+    [r,p] = corrcoef(medians_energy, medians_SANDI, 'rows','complete');
+    corr_coef = round(r(2),2);
+    p_value = p(2);
+    corr_coef_str = num2str(corr_coef);
+    p_value_str = num2str(p_value);
+
+
+
+
+    [P,S] = polyfit(medians_SANDI,medians_energy,1);
+    %yfit = P(1)*medians_SANDI+P(2);
+
+    [yfit,delta] = polyconf(P,medians_SANDI,S,'alpha',0.05);
+
+    fit_low=cat(1,medians_SANDI,yfit-delta);
+    fit_low=fit_low';
+    fit_low_sorted=sortrows(fit_low,1,'descend');
+
+    fit_high=cat(1,medians_SANDI,yfit+delta);
+    fit_high=fit_high';
+    fit_high_sorted=sortrows(fit_high,1,'descend');
+
+
+
+    figure,
+    s=scatter(medians_SANDI,medians_energy);
+    hold on
+    h=plot(fit_low_sorted(:,1),fit_low_sorted(:,2),'r--',fit_low_sorted(:,1),fit_high_sorted(:,2),'r--','LineWidth',1.5);
+    %s = errorbar(medians_SANDI, medians_energy, SEs_energy, SEs_energy, SEs_SANDI, SEs_SANDI,'o');
+    %hold on
+    %plot(medians_SANDI,yfit,'--','LineWidth',3,'Color',"#000000");
+    xlabel(micro_parameter_label,'FontSize',15,'FontWeight','bold');
+    ylabel(dependent_parameter_label,'FontSize',15,'FontWeight','bold');
+    s.LineWidth = 0.6;
+    s.MarkerEdgeColor = 'b';
+    s.MarkerFaceColor = [0 0.5 0.5];
+
+    if p(2)<0.05 && p(2)>0.01
+        txt = {strcat('r = ',corr_coef_str,'*')};
+    elseif p(2)<0.01 && p(2)>0.001
+        txt = {strcat('r = ',corr_coef_str,'**')};
+    elseif p(2)<0.001
+        txt = {strcat('r = ',corr_coef_str,'***')};
+    elseif p(2)>0.05
+        txt = {strcat('r = ',corr_coef_str,'')};
+    end
+
+    if strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'Rsoma')
+        text(13.5,60,txt, 'FontWeight', 'bold','FontSize',12);
+    elseif strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'fsoma')
+        text(0.39,60,txt, 'FontWeight', 'bold','FontSize',12);
+    elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'Rsoma')
+        text(13.5,140,txt, 'FontWeight', 'bold','FontSize',12);
+    elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'fsoma')
+        text(0.39,140,txt, 'FontWeight', 'bold','FontSize',12);
+    elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'fsup')
+        text(8*10^4,140,txt, 'FontWeight', 'bold','FontSize',12);
+    elseif strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'fsup')
+        text(8*10^4,60,txt, 'FontWeight', 'bold','FontSize',12);
+    end
+    set(get(gca, 'XAxis'), 'FontWeight', 'bold');
+    set(get(gca, 'YAxis'), 'FontWeight', 'bold');
+    set(gca,'box','off')
+    x0=400;
+    y0=400;
+    width=550;
+    height=450;
+    set(gcf,'position',[x0,y0,width,height])
+    grid on
+
+end
+
+
+
+
+
 %% Method IV (remove zeros of binary maps in all maps and CBF<=0, CMRO2<=0 in all maps)
 %set GM partial volume estimate
 
@@ -203,7 +455,7 @@ regions = unique(V_atlas_tot(:));
 n_regions = numel(regions);
 
 %% Choose energy parameter to be considered
-energy_parameter='CBF';
+energy_parameter='CMRO2';
 
 %%
 
@@ -426,7 +678,12 @@ timeElapsed = toc(start_time);
 disp(strcat('Total computing time =',num2str(round(timeElapsed/60,2)),'min'));
 
 %% select parameters to investigate
-micro_parameter='Rsoma'; 
+micro_parameter='fsup'; 
+
+%% remove outlier detected in GM section
+corr_for_each_subj_energy_rsoma(26)=[];
+corr_for_each_subj_energy_fsoma(26)=[];
+corr_for_each_subj_energy_fsup(26)=[];
 
 %% for each subj 
 
@@ -453,7 +710,7 @@ s=histogram(corr_for_each_subj,'FaceAlpha',1,'BinWidth',0.07);
 s.FaceColor="b";
 xlabel('correlation coefficient, r','FontWeight','bold','FontSize',15);
 ylabel('Counts (# subjects)','FontWeight','bold','FontSize',15);
-ylim([0,14]);
+ylim([0,15]);
 xline(0,'--','LineWidth',3);
 if p<0.05 && p>0.01    
     txt = {strcat('\mu_r = ',mean_corr,'*')};
@@ -466,6 +723,14 @@ end
 title(strcat(energy_parameter, 'vs',micro_parameter));
 text(0.5,7,txt, 'FontWeight', 'bold','FontSize',15);
 grid on
+
+%% remove outlier detected in GM section
+
+medians_energy_subjs(26,:)=[];
+medians_rsoma_subjs(26,:)=[];
+medians_fsoma_subjs(26,:)=[];
+medians_fsup_subjs(26,:)=[];
+
 %% average across subjects
 
 mean_energy_tot = nanmean(medians_energy_subjs,1);
@@ -591,6 +856,8 @@ idx_high_var_rsoma=find(var_rsoma>prctile(var_rsoma,75));
 idx_high_var_fsoma=find(var_fsoma>prctile(var_fsoma,75));
 idx_high_var_fsup=find(var_fsup>prctile(var_fsup,75));
 
+disp('First thresholding step successfully done');
+
 %% in order to do Energy vs one Microparameter analysis (run if corr analysis)
 
 if strcmp(micro_parameter,'Rsoma')
@@ -610,32 +877,22 @@ elseif strcmp(micro_parameter,'fsup')
     SE_fsup(idx_high_var_fsup)=[]; 
 end
 
-%% in order to do Energy vs many Microparameters analysis (run if GLM analysis)
-%it must be so in order to run this analysis
-
-idx_tot=unique([idx_high_var_rsoma,idx_high_var_fsoma,idx_high_var_fsup]);
-
-% mean_CBF_tot(idx_tot)=[];
-% mean_CMRO2_tot(idx_tot)=[];
-mean_energy_high_n_voxels(idx_tot)=[];%at this point you can try to apply a PLS
-% for CBF and one for CMRO2
-mean_rsoma_high_n_voxels(idx_tot)=[];
-mean_fsoma_high_n_voxels(idx_tot)=[];
-mean_fsup_high_n_voxels(idx_tot)=[];
-
-
+disp('Second thresholding step successfully done');
 
 %% plot energy vs microparameter 
 
 if strcmp(micro_parameter,'Rsoma')
     mean_SANDI=mean_rsoma;
-    SE_SANDI_tot=SE_rsoma;
+    SE_SANDI=SE_rsoma;
+    unit_of_measure='(\mum)';
 elseif strcmp(micro_parameter,'fsoma')
     mean_SANDI=mean_fsoma;
-    SE_SANDI_tot=SE_fsoma;
+    SE_SANDI=SE_fsoma;
+    unit_of_measure='';
 elseif strcmp(micro_parameter,'fsup')
     mean_SANDI=mean_fsup;
-    SE_SANDI_tot=SE_fsup;
+    SE_SANDI=SE_fsup;
+    unit_of_measure='(m^{-1})';
 end
 
 if strcmp(energy_parameter,'CBF')   
@@ -661,24 +918,24 @@ end
 % % SE_energy = nanstd(reshaped_medians_energy,0,1)/sqrt(numel(reshaped_medians_energy(:,1)));
 % % SE_SANDI = nanstd(reshaped_medians_fsoma,0,1)/sqrt(numel(reshaped_medians_energy(:,1)));
 
-[r,p] = corrcoef(mean_energy_tot, mean_SANDI, 'rows','complete');
+[r,p] = corrcoef(mean_energy, mean_SANDI, 'rows','complete');
 
 corr_coef = round(r(2),2);
 p_value = p(2);
 corr_coef_str = num2str(corr_coef);
 p_value_str = num2str(p_value);
 
-P = polyfit(mean_SANDI,mean_energy_tot,1);
+P = polyfit(mean_SANDI,mean_energy,1);
 yfit_energy = P(1)*mean_SANDI+P(2);
 
 
 
 
 figure, 
-s = errorbar(mean_SANDI, mean_energy_tot, SE_energy_tot, SE_energy_tot, SE_SANDI_tot, SE_SANDI_tot,'o');
+s = errorbar(mean_SANDI, mean_energy, SE_energy, SE_energy, SE_SANDI, SE_SANDI,'o');
 hold on
 plot(mean_SANDI,yfit_energy,'--','LineWidth',3,'Color',"#000000");
-xlabel(strcat(micro_parameter),'FontSize',15,'FontWeight','bold');
+xlabel(strcat(micro_parameter,unit_of_measure),'FontSize',15,'FontWeight','bold');
 ylabel(dependent_parameter,'FontSize',15,'FontWeight','bold');
 s.LineWidth = 0.6;
 s.MarkerEdgeColor = 'b';
@@ -715,6 +972,22 @@ width=550;
 height=450;
 set(gcf,'position',[x0,y0,width,height]);
 grid on
+
+%% in order to do Energy vs many Microparameters analysis (run if GLM analysis)
+%it must be so in order to run this analysis
+
+%unique is needed, otherwise you delete two times the voxel corresponding
+%to the same index and in the second time you will delete
+%a different one.
+idx_tot=unique([idx_high_var_rsoma,idx_high_var_fsoma,idx_high_var_fsup]);
+
+% mean_CBF_tot(idx_tot)=[];
+% mean_CMRO2_tot(idx_tot)=[];
+mean_energy_high_n_voxels(idx_tot)=[];%at this point you can try to apply a PLS
+% for CBF and one for CMRO2
+mean_rsoma_high_n_voxels(idx_tot)=[];
+mean_fsoma_high_n_voxels(idx_tot)=[];
+mean_fsup_high_n_voxels(idx_tot)=[];
 
 %% Matrix for correlation across subjs analysis (region by region)
 
@@ -981,216 +1254,6 @@ else
     V_mean_rsoma_map=V_atlas;
 end
 
-%%
-
-energy_parameter='CBF';
-
-%% GM across subjects analysis
-medians_energy=[];
-medians_fsoma = [];
-medians_rsoma = [];
-medians_fc = [];
-medians_fsup = [];
-
-medians_fextra = [];
-medians_fneurite = [];
-medians_Din = [];
-medians_De = [];
-
-V_GM=V_GM_tot;
-V_GM(V_GM>0.5)=1;
-V_GM(V_GM<1)=0;
-
-for i = 1:1:n_subjs %here we loose information about the real number of subj
-    tic
-    if strcmp(energy_parameter,'CBF')
-        V_energy_tot = V_CBF_tots{i};
-    elseif strcmp(energy_parameter,'CMRO2')
-        V_energy_tot = V_CMRO2_tots{i};
-    end
-    V_fsoma_tot = V_fsoma_tots{i};
-    V_rsoma_tot = V_rsoma_tots{i};
-    V_fc_tot = V_fc_tots{i}; 
-    V_fsup_tot = V_fsup_tots{i}; 
-
-    V_fextra_tot = V_fextra_tots{i}; 
-    V_fneurite_tot = V_fneurite_tots{i}; 
-    V_Din_tot = V_Din_tots{i};
-    V_De_tot = V_De_tots{i};
-
-    V_fsoma_to_mask=V_fsoma_tot;
-    V_fsoma_to_mask(V_fsoma_to_mask>0.15)=1;
-    V_fsoma_to_mask(V_fsoma_to_mask<1)=0;
-
-    V_energy = V_energy_tot;
-    V_fsoma = V_fsoma_tot;
-    V_rsoma = V_rsoma_tot;
-    V_fc = V_fc_tot;
-    V_fsup = V_fsup_tot;
-
-    V_fextra = V_fextra_tot;
-    V_fneurite = V_fneurite_tot;
-    V_Din = V_Din_tot;
-    V_De = V_De_tot;
-
-    V_energy_masked = V_energy.*V_fsoma_to_mask.*V_GM;
-    V_fsoma_masked = V_fsoma.*V_fsoma_to_mask.*V_GM;
-    V_rsoma_masked = V_rsoma.*V_fsoma_to_mask.*V_GM;
-    V_fc_masked = V_fc.*V_fsoma_to_mask.*V_GM;
-    V_fsup_masked = V_fsup.*V_fsoma_to_mask.*V_GM;
-
-    V_fextra_masked = V_fextra.*V_fsoma_to_mask.*V_GM;
-    V_fneurite_masked = V_fneurite.*V_fsoma_to_mask.*V_GM;
-    V_Din_masked = V_Din.*V_fsoma_to_mask.*V_GM;
-    V_De_masked = V_De.*V_fsoma_to_mask.*V_GM;    
-
-    V_energy_masked_vec = V_energy_masked(:);
-    V_fsoma_masked_vec = V_fsoma_masked(:);
-    V_rsoma_masked_vec = V_rsoma_masked(:);
-    V_fc_masked_vec = V_fc_masked(:);
-    V_fsup_masked_vec = V_fsup_masked(:);
-
-    V_fextra_masked_vec = V_fextra_masked(:);
-    V_fneurite_masked_vec = V_fneurite_masked(:);
-    V_Din_masked_vec = V_Din_masked(:);
-    V_De_masked_vec = V_De_masked(:);
-
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-    indices_energy = [];
-    indices_energy=find(V_energy_masked_vec<=0);
-
-
-    disp(strcat('Processing subj',num2str(i)))
-
-
-
-
-    V_energy_masked_vec(indices_energy)=[];
-    V_fsoma_masked_vec(indices_energy)=[];
-    V_rsoma_masked_vec(indices_energy)=[];
-    V_fc_masked_vec(indices_energy)=[];
-    V_fsup_masked_vec(indices_energy)=[];
-
-    V_fextra_masked_vec(indices_energy)=[];
-    V_fneurite_masked_vec(indices_energy)=[];
-    V_Din_masked_vec(indices_energy)=[];
-    V_De_masked_vec(indices_energy)=[];
-
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
-
-    median_energy = nanmedian(V_energy_masked_vec);
-    median_fsoma = nanmedian(V_fsoma_masked_vec);
-    median_rsoma = nanmedian(V_rsoma_masked_vec);
-    median_fc = nanmedian(V_fc_masked_vec);
-    median_fsup = nanmedian(V_fsup_masked_vec);
-
-    median_fextra = nanmedian(V_fextra_masked_vec);
-    median_fneurite = nanmedian(V_fneurite_masked_vec);
-    median_Din = nanmedian(V_Din_masked_vec);
-    median_De = nanmedian(V_De_masked_vec);
-
-    medians_energy(end+1) = median_energy;
-    medians_fsoma(end+1) = median_fsoma;
-    medians_rsoma(end+1) = median_rsoma;
-    medians_fc(end+1) = median_fc;
-    medians_fsup(end+1) = median_fsup;
-
-    medians_fextra(end+1) = median_fextra;
-    medians_fneurite(end+1) = median_fneurite;
-    medians_Din(end+1) = median_Din;
-    medians_De(end+1) = median_De;
-
-    toc
-end
-
-%% 
-micro_parameter='Rsoma';%other GM parameters: fsoma fc fsup 
-
-%%
-if strcmp(energy_parameter,'CMRO2')
-    dependent_parameter_label='CMRO_2(\mumol/100g/min)';
-elseif strcmp(energy_parameter,'CBF')
-    dependent_parameter_label='CBF(ml/100g/min)';
-end
-
-if strcmp(micro_parameter,'Rsoma')
-    micro_parameter_label='Rsoma(\mum)';
-    medians_SANDI=medians_rsoma;
-elseif strcmp(micro_parameter,'fsoma')
-    micro_parameter_label='fsoma';
-    medians_SANDI=medians_fsoma;
-elseif strcmp(micro_parameter,'fsup')
-    micro_parameter_label='fsup(m^{-1})';
-    medians_SANDI=medians_fsup;
-elseif strcmp(micro_parameter,'fc')
-    micro_parameter_label='fc(m^{-3})';
-    medians_SANDI=medians_fc;
-end
-
-%%
-[r,p] = corrcoef(medians_energy, medians_SANDI, 'rows','complete');
-corr_coef = round(r(2),2);
-p_value = p(2);
-corr_coef_str = num2str(corr_coef);
-p_value_str = num2str(p_value);
-
-
-
-
-[P,S] = polyfit(medians_SANDI,medians_energy,1);
-%yfit = P(1)*medians_SANDI+P(2);
-
-[yfit,delta] = polyconf(P,medians_SANDI,S,'alpha',0.05);
-
-fit_low=cat(1,medians_SANDI,yfit-delta);
-fit_low=fit_low';
-fit_low_sorted=sortrows(fit_low,1,'descend');
-
-fit_high=cat(1,medians_SANDI,yfit+delta);
-fit_high=fit_high';
-fit_high_sorted=sortrows(fit_high,1,'descend');
-
-
-
-figure, 
-s=scatter(medians_SANDI,medians_energy);
-hold on
-h=plot(fit_low_sorted(:,1),fit_low_sorted(:,2),'r--',fit_low_sorted(:,1),fit_high_sorted(:,2),'r--','LineWidth',1.5);
-%s = errorbar(medians_SANDI, medians_energy, SEs_energy, SEs_energy, SEs_SANDI, SEs_SANDI,'o');
-%hold on
-%plot(medians_SANDI,yfit,'--','LineWidth',3,'Color',"#000000");
-xlabel(micro_parameter_label,'FontSize',15,'FontWeight','bold');
-ylabel(dependent_parameter_label,'FontSize',15,'FontWeight','bold');
-s.LineWidth = 0.6;
-s.MarkerEdgeColor = 'b';
-s.MarkerFaceColor = [0 0.5 0.5];
-txt = {strcat('r = ',corr_coef_str,'')};%,strcat('p-value = ',p_value_str)
-if strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'Rsoma')
-    text(13.5,60,txt, 'FontWeight', 'bold','FontSize',12);
-elseif strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'fsoma')
-    text(0.39,60,txt, 'FontWeight', 'bold','FontSize',12);
-elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'Rsoma')
-    text(13.5,140,txt, 'FontWeight', 'bold','FontSize',12);
-elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'fsoma')
-    text(0.39,140,txt, 'FontWeight', 'bold','FontSize',12);
-elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'fsup')
-    text(8*10^4,140,txt, 'FontWeight', 'bold','FontSize',12);
-elseif strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'fsup')
-    text(8*10^4,60,txt, 'FontWeight', 'bold','FontSize',12);
-end
-set(get(gca, 'XAxis'), 'FontWeight', 'bold');
-set(get(gca, 'YAxis'), 'FontWeight', 'bold');
-set(gca,'box','off')
-x0=400;
-y0=400;
-width=550;
-height=450;
-set(gcf,'position',[x0,y0,width,height])
-grid on
 
 
 
