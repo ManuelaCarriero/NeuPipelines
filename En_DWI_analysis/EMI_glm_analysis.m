@@ -15,7 +15,7 @@ fsup_tr=fsup_scored';
 
 %% Bootstrapping to obtain a distribution of beta values and the error
 %This is to create the random data stream for reproducibility
-for i=1:1000
+for i=1:10000
     disp(i)
     s=RandStream('mlfg6331_64','Seed',i);
     energy_sampled = datasample(s, energy_tr, length(energy_tr),'Replace',true);
@@ -37,7 +37,7 @@ for i=1:1000
     %k-fold cross validation to select the right number of components
     [XL,yl,XS,YS,beta,PCTVAR,PLSmsep] = plsregress(X,y,ncomp,'CV',10);
 
-    min_err=min(PLSmsep(2,:));
+    min_err=min(PLSmsep(2,:));%min MSE for the predictor variable
     idx=find(PLSmsep(2,:)==min_err);
     new_ncomp=idx-1;
 
@@ -61,8 +61,20 @@ beta_rsoma(isnan(beta_rsoma))=[];
 beta_fsup(isnan(beta_fsup))=[];
 
 figure, hist(beta_fsoma);
+xlabel('fsoma beta coefficients','FontWeight','bold','FontSize',12);
+ylabel('Counts','FontWeight','bold','FontSize',12);
+title(strcat(energy,'vs Soma microparameters'));
+grid on
 figure, hist(beta_rsoma);
+xlabel('Rsoma beta coefficients','FontWeight','bold','FontSize',12);
+ylabel('Counts','FontWeight','bold','FontSize',12);
+title(strcat(energy,'vs Soma microparameters'));
+grid on
 figure, hist(beta_fsup);
+xlabel('fsup beta coefficients','FontWeight','bold','FontSize',12);
+ylabel('Counts','FontWeight','bold','FontSize',12);
+title(strcat(energy,'vs Soma microparameters'));
+grid on
 
 %For the central limit theorem, the mean has to converge to zero
 mean_beta_fsoma=mean(beta_fsoma);
@@ -70,7 +82,7 @@ mean_beta_rsoma=mean(beta_rsoma);
 mean_beta_fsup=mean(beta_fsup);
 
 %Calculate the expectation value
-micro_parameter='fsup';
+micro_parameter='Rsoma';
 if strcmp(micro_parameter,'fsoma')
     beta=beta_fsoma;
 elseif strcmp(micro_parameter,'Rsoma')
@@ -101,7 +113,6 @@ elseif strcmp(micro_parameter,'fsup')
     weighted_fsup=means.*N;
     E_fsup=sum(weighted_fsup)./sum(N);%0.0038
 end
-
 
 std_beta_fsoma=std(beta_fsoma);
 std_beta_rsoma=std(beta_rsoma);
@@ -154,7 +165,10 @@ axis tight
 
 
 
-%%
+%% Other kind of analysis 
+% (if you want to study the property of latent space 
+% or check the goodness of fit) 
+
 yfit = [ones(size(X,1),1) X]*beta;
 figure,
 plot(y,yfit,'o')
@@ -194,4 +208,4 @@ bar(1:numel(X(:,1)),XS(:,6))
 
 %% Print correlation coefficients
 
-disp(beta);
+disp(beta)
