@@ -65,8 +65,8 @@ for i=1:1000
     disp(i)    
     %try to sample from 1 to the length and then use the index 
     % for each parameter
-
-    idx_samples=datasample(1:length(energy_tr),length(energy_tr),'Replace',true);
+    s=RandStream('mlfg6331_64','Seed',i);
+    idx_samples=datasample(s,1:length(energy_tr),length(energy_tr),'Replace',true);
 
     energy_sampled = energy_tr(idx_samples);
     rsoma_sampled = rsoma_tr(idx_samples);
@@ -90,6 +90,7 @@ for i=1:1000
 
     %nested cross validation
     %k-fold cross validation to select the right number of components
+    rng(123);%set seed for reproducibility in CV splits choice
     [XL,yl,XS,YS,beta,PCTVAR,PLSmsep] = plsregress(X,y,ncomp,'CV',10);
 
     min_err=min(PLSmsep(2,:));%min MSE for the predictor variable
@@ -139,6 +140,11 @@ mean_beta_fsoma=mean(beta_fsoma);
 mean_beta_rsoma=mean(beta_rsoma);
 mean_beta_fsup=mean(beta_fsup);
 
+std_beta_fsoma=std(beta_fsoma);
+std_beta_rsoma=std(beta_rsoma);
+std_beta_fsup=std(beta_fsup);
+%%
+
 %Calculate the expectation value
 micro_parameter='Rsoma';
 if strcmp(micro_parameter,'fsoma')
@@ -172,9 +178,7 @@ elseif strcmp(micro_parameter,'fsup')
     E_fsup=sum(weighted_fsup)./sum(N);%0.0038
 end
 
-std_beta_fsoma=std(beta_fsoma);
-std_beta_rsoma=std(beta_rsoma);
-std_beta_fsup=std(beta_fsup);
+
 
 %%
 figure,
