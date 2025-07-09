@@ -9,6 +9,8 @@ img_path_atlas='/storage/shared/Atlas/AAL3v1_2mm_resampled.nii.gz';
 Vhdr = spm_vol(img_path_atlas);
 V_atlas_tot = spm_read_vols(Vhdr);
 
+
+
 %% Import data 
 
 run='run-01';%CHANGE
@@ -52,10 +54,14 @@ for i = 1:1:n_subjs%lst
 %     img_path_fneurite = strcat('/media/nas_rete/Vitality/maps2MNI/250101/SANDItoMNI/',subj,'_',run,'_SANDI-fit_fneurite_2MNI2mm.nii.gz');
 %     img_path_fextra = strcat('/media/nas_rete/Vitality/maps2MNI/250101/SANDItoMNI/',subj,'_',run,'_SANDI-fit_fextra_2MNI2mm.nii.gz');
 
-     img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/250418_corrected_for_RIM/CBF02MNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CBF_map_2MNI.nii.gz');
+%     %Linear Interpolation
+%     img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/250418_corrected_for_RIM/CBF02MNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CBF_map_2MNI.nii.gz');
+%     img_path_CMRO2 = strcat('/media/nas_rete/Vitality/registered/perf/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CMRO2_map.nii.gz'); %_2MNI2mm
     
-
-    img_path_CMRO2 = strcat('/media/nas_rete/Vitality/registered/perf/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CMRO2_map.nii.gz'); %_2MNI2mm
+    %Nearest Neighbor Interpolation
+    img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/250627_NN_interpolation/CBF22MNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CBF_map_2MNI.nii.gz');
+    img_path_CMRO2 = strcat('/media/nas_rete/Vitality/maps2MNI/250627_NN_interpolation/CMRO22MNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CMRO2_map_2MNI.nii.gz'); %_2MNI2mm
+% 
     
     img_path_rsoma = strcat('/media/nas_rete/Vitality/registered/SANDI/',subj,'_',run,'_SANDI-fit_Rsoma_2mm.nii.gz');
     img_path_fsoma = strcat('/media/nas_rete/Vitality/registered/SANDI/',subj,'_',run,'_SANDI-fit_fsoma_2mm.nii.gz');
@@ -198,7 +204,7 @@ load('load_data.mat');
 % in GM is first explored to exclude outliers 
 
 %choose the energy parameter: either CMRO2 or CBF
-energy_parameter='CBF';
+energy_parameter='CMRO2';
 
 %% GM across subjects analysis
 medians_energy=[];
@@ -336,11 +342,12 @@ medians_energy(outlier_idx)=[];
 medians_fsoma(outlier_idx)=[];
 medians_fsup(outlier_idx)=[];
 medians_rsoma(outlier_idx)=[];
+medians_fc(outlier_idx)=[];
 disp('outlier successfully removed')
 
 %%
 
-micro_parameters={'Rsoma' 'fsoma' 'fsup'};
+micro_parameters={'Rsoma' 'fsoma' 'fsup' 'fc'};
 for i=1:numel(micro_parameters)
     micro_parameter=micro_parameters{i};
 
@@ -426,6 +433,10 @@ for i=1:numel(micro_parameters)
         text(8*10^4,140,txt, 'FontWeight', 'bold','FontSize',12);
     elseif strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'fsup')
         text(8*10^4,60,txt, 'FontWeight', 'bold','FontSize',12);
+    elseif strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'fc')
+        text(3.55*10^(13),60,txt, 'FontWeight', 'bold','FontSize',12);
+    elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'fc')
+        text(3.55*10^(13),120,txt, 'FontWeight', 'bold','FontSize',12);
     end
     set(get(gca, 'XAxis'), 'FontWeight', 'bold');
     set(get(gca, 'YAxis'), 'FontWeight', 'bold');
@@ -489,6 +500,10 @@ corr_for_each_subj_energy_fsoma=[];
 pvalue_for_each_subj_energy_fsoma=[];
 corr_for_each_subj_energy_fsup=[];
 pvalue_for_each_subj_energy_fsup=[];
+corr_for_each_subj_energy_fc=[];
+pvalue_for_each_subj_energy_fc=[];
+corr_for_each_subj_energy_fneurite=[];
+pvalue_for_each_subj_energy_fneurite=[];
 
 start_time=tic;
 for i = 1:1:n_subjs %1:1:length(lst)
@@ -551,7 +566,7 @@ for i = 1:1:n_subjs %1:1:length(lst)
         V_fsoma_to_mask(V_fsoma_to_mask<1)=0;
 
 
-        V_mask = V_GM.*V_fsoma_to_mask.*V_atlas;
+        V_mask = V_atlas.*V_GM.*V_fsoma_to_mask;
 
         V_energy_withoutzerosatlas=V_energy;
 
@@ -595,9 +610,15 @@ for i = 1:1:n_subjs %1:1:length(lst)
         v_fextra_masked(mask_zeros)=[];
         v_Din_masked(mask_zeros)=[];
         v_De_masked(mask_zeros)=[];
-
+        
+%         %check distribution here
+%         v_energy_masked_withoutremovinginnerzeros=v_energy_masked;     
+%         figure, hist(v_energy_masked_withoutremovinginnerzeros(:));
+% 
         indices_energy = [];
         indices_energy=find(v_energy_masked<=0);
+        
+
 
         disp(strcat('region', num2str(k)))
 
@@ -613,8 +634,9 @@ for i = 1:1:n_subjs %1:1:length(lst)
         v_Din_masked(indices_energy)=[];
         v_De_masked(indices_energy)=[];
 
-
-
+%        %check distribution here
+%        v_energy_masked_afterremovinginnerzeros=v_energy_masked;     
+%        figure, hist(v_energy_masked_afterremovinginnerzeros(:));
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         n_voxels = numel(v_energy_masked);%In this case it is not the same for all parameters
@@ -660,6 +682,8 @@ for i = 1:1:n_subjs %1:1:length(lst)
     [r_energy_rsoma,p_energy_rsoma] = corrcoef(medians_energy_subj, medians_rsoma_subj, 'rows','complete');
     [r_energy_fsoma,p_energy_fsoma] = corrcoef(medians_energy_subj, medians_fsoma_subj, 'rows','complete');
     [r_energy_fsup,p_energy_fsup] = corrcoef(medians_energy_subj, medians_fsup_subj, 'rows','complete');
+    [r_energy_fc,p_energy_fc] = corrcoef(medians_energy_subj, medians_fc_subj, 'rows','complete');
+    [r_energy_fneurite,p_energy_fneurite] = corrcoef(medians_energy_subj, medians_fneurite_subj, 'rows','complete');
 
     corr_for_each_subj_energy_rsoma(i)=r_energy_rsoma(2);
     pvalue_for_each_subj_energy_rsoma(i)=p_energy_rsoma(2);
@@ -670,6 +694,13 @@ for i = 1:1:n_subjs %1:1:length(lst)
     corr_for_each_subj_energy_fsup(i)=r_energy_fsup(2);
     pvalue_for_each_subj_energy_fsup(i)=p_energy_fsup(2);
 
+    corr_for_each_subj_energy_fc(i)=r_energy_fc(2);
+    pvalue_for_each_subj_energy_fc(i)=p_energy_fc(2);
+
+    corr_for_each_subj_energy_fneurite(i)=r_energy_fneurite(2);
+    pvalue_for_each_subj_energy_fneurite(i)=p_energy_fneurite(2);
+
+
     disp(strcat('Finished subject', num2str(i),'Starting subject', num2str(i+1)))
 
 end
@@ -678,12 +709,13 @@ timeElapsed = toc(start_time);
 disp(strcat('Total computing time =',num2str(round(timeElapsed/60,2)),'min'));
 
 %% select parameters to investigate
-micro_parameter='fsup'; 
+micro_parameter='fneurite'; 
 
 %% remove outlier detected in GM section
 corr_for_each_subj_energy_rsoma(26)=[];
 corr_for_each_subj_energy_fsoma(26)=[];
 corr_for_each_subj_energy_fsup(26)=[];
+corr_for_each_subj_energy_fc(26)=[];
 
 %% for each subj 
 
@@ -693,6 +725,10 @@ elseif strcmp(micro_parameter,'fsoma')
     corr_for_each_subj=corr_for_each_subj_energy_fsoma;
 elseif strcmp(micro_parameter,'fsup') 
     corr_for_each_subj=corr_for_each_subj_energy_fsup;
+elseif strcmp(micro_parameter,'fc')
+    corr_for_each_subj=corr_for_each_subj_energy_fc;
+elseif strcmp(micro_parameter,'fneurite')
+    corr_for_each_subj=corr_for_each_subj_energy_fneurite;
 end
 
 mean_with_subjs_corr=nanmean(corr_for_each_subj);%with fsup we could have NaNs
@@ -710,7 +746,7 @@ s=histogram(corr_for_each_subj,'FaceAlpha',1,'BinWidth',0.07);
 s.FaceColor="b";
 xlabel('correlation coefficient, r','FontWeight','bold','FontSize',15);
 ylabel('Counts (# subjects)','FontWeight','bold','FontSize',15);
-ylim([0,15]);
+ylim([0,16.5]);
 xline(0,'--','LineWidth',3);
 if p<0.05 && p>0.01    
     txt = {strcat('\mu_r = ',mean_corr,'*')};
@@ -721,7 +757,7 @@ else
 end
 
 title(strcat(energy_parameter, 'vs',micro_parameter));
-text(0.5,7,txt, 'FontWeight', 'bold','FontSize',15);
+text(0.1,7,txt, 'FontWeight', 'bold','FontSize',15);
 grid on
 
 %% remove outlier detected in GM section
@@ -730,6 +766,14 @@ medians_energy_subjs(26,:)=[];
 medians_rsoma_subjs(26,:)=[];
 medians_fsoma_subjs(26,:)=[];
 medians_fsup_subjs(26,:)=[];
+medians_fc_subjs(26,:)=[];
+
+medians_fextra_subjs(26,:)=[];
+medians_fneurite_subjs(26,:)=[];
+medians_Din_subjs(26,:)=[];
+medians_De_subjs(26,:)=[];
+
+disp('Outlier successfully removed');
 
 %% average across subjects
 
@@ -855,6 +899,8 @@ var_De(idx_low_n_voxels)=[];
 idx_high_var_rsoma=find(var_rsoma>prctile(var_rsoma,75));
 idx_high_var_fsoma=find(var_fsoma>prctile(var_fsoma,75));
 idx_high_var_fsup=find(var_fsup>prctile(var_fsup,75));
+idx_high_var_fc=find(var_fc>prctile(var_fc,75));
+idx_high_var_fneurite=find(var_fneurite>prctile(var_fneurite,75));
 
 disp('First thresholding step successfully done');
 
@@ -875,6 +921,16 @@ elseif strcmp(micro_parameter,'fsup')
     SE_energy(idx_high_var_fsup)=[]; 
     mean_fsup(idx_high_var_fsup)=[];
     SE_fsup(idx_high_var_fsup)=[]; 
+elseif strcmp(micro_parameter,'fc')
+    mean_energy(idx_high_var_fc)=[];
+    SE_energy(idx_high_var_fc)=[];
+    mean_fc(idx_high_var_fc)=[];
+    SE_fc(idx_high_var_fc)=[];
+elseif strcmp(micro_parameter,'fneurite')
+    mean_energy(idx_high_var_fneurite)=[];
+    SE_energy(idx_high_var_fneurite)=[];
+    mean_fneurite(idx_high_var_fneurite)=[];
+    SE_fneurite(idx_high_var_fneurite)=[];
 end
 
 disp('Second thresholding step successfully done');
@@ -893,6 +949,14 @@ elseif strcmp(micro_parameter,'fsup')
     mean_SANDI=mean_fsup;
     SE_SANDI=SE_fsup;
     unit_of_measure='(m^{-1})';
+elseif strcmp(micro_parameter,'fc')
+    mean_SANDI=mean_fc;
+    SE_SANDI=SE_fc;
+    unit_of_measure='(m^{-3})';
+elseif strcmp(micro_parameter,'fneurite')
+    mean_SANDI=mean_fneurite;
+    SE_SANDI=SE_fneurite;
+    unit_of_measure='';
 end
 
 if strcmp(energy_parameter,'CBF')   
@@ -918,6 +982,14 @@ end
 % % SE_energy = nanstd(reshaped_medians_energy,0,1)/sqrt(numel(reshaped_medians_energy(:,1)));
 % % SE_SANDI = nanstd(reshaped_medians_fsoma,0,1)/sqrt(numel(reshaped_medians_energy(:,1)));
 
+% % removing
+% % idx_13=find(mean_SANDI<13.6);
+% % 
+% % mean_SANDI(idx_13)=[];
+% % mean_energy(idx_13)=[];
+% % SE_energy(idx_13)=[];
+% % SE_SANDI(idx_13)=[];
+
 [r,p] = corrcoef(mean_energy, mean_SANDI, 'rows','complete');
 
 corr_coef = round(r(2),2);
@@ -931,6 +1003,7 @@ yfit_energy = P(1)*mean_SANDI+P(2);
 
 
 
+
 figure, 
 s = errorbar(mean_SANDI, mean_energy, SE_energy, SE_energy, SE_SANDI, SE_SANDI,'o');
 hold on
@@ -940,6 +1013,7 @@ ylabel(dependent_parameter,'FontSize',15,'FontWeight','bold');
 s.LineWidth = 0.6;
 s.MarkerEdgeColor = 'b';
 s.MarkerFaceColor = [0 0.5 0.5];
+%ylim([40,180]);
 %n_subjs_str=num2str(n_subjs);
 if p(2)<0.05 && p(2)>0.01    
     txt = {strcat('r = ',corr_coef_str,'*')};
@@ -958,10 +1032,17 @@ elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'Rsoma')
     text(13.8,140,txt, 'FontWeight', 'bold','FontSize',12);
 elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'fsoma')
     text(0.39,140,txt, 'FontWeight', 'bold','FontSize',12);
+elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'fc')
+    text(3*10^(13),140,txt, 'FontWeight', 'bold','FontSize',12);
 elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'fsup')
     text(8*10^4,140,txt, 'FontWeight', 'bold','FontSize',12);
+elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'fneurite')
+    text(0.3,140,txt, 'FontWeight', 'bold','FontSize',12);
 elseif strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'fsup')
     text(8*10^4,60,txt, 'FontWeight', 'bold','FontSize',12);
+elseif strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'fc')
+    text(3*10^13,60,txt, 'FontWeight', 'bold','FontSize',12);
+
 end
 set(get(gca, 'XAxis'), 'FontWeight', 'bold');
 set(get(gca, 'YAxis'), 'FontWeight', 'bold');
@@ -988,6 +1069,7 @@ mean_energy_high_n_voxels(idx_tot)=[];%at this point you can try to apply a PLS
 mean_rsoma_high_n_voxels(idx_tot)=[];
 mean_fsoma_high_n_voxels(idx_tot)=[];
 mean_fsup_high_n_voxels(idx_tot)=[];
+mean_fc_high_n_voxels(idx_tot)=[];
 
 %% Matrix for correlation across subjs analysis (region by region)
 
