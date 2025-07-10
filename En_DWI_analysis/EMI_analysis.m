@@ -443,15 +443,16 @@ end
 %% Correlation across regions
 GM_pve_threshold=0.5;
 fsoma_threshold=0.15;
-%set GM partial volume estimate
 
+%set GM partial volume estimate map
 V_GM = V_GM_tot;
 V_GM(V_GM>GM_pve_threshold)=1;
 V_GM(V_GM<1)=0;
 
-
 regions = unique(V_atlas_tot(:));
-n_regions = numel(regions);
+%background removal
+regions(1)=[];
+n_regions=numel(regions);
 
 %% Choose energy parameter to be considered
 energy_parameter='CMRO2';
@@ -522,7 +523,7 @@ for i = 1:1:n_subjs %1:1:length(lst)
 
     n_voxels_lst=[];
 
-    for k = 2:numel(regions)%1 is the background
+    for k = 1:n_regions
         tic
 
         V_atlas = V_atlas_tot;
@@ -770,7 +771,7 @@ mean_Din = mean_Din_tot;
 mean_De = mean_De_tot;
 mean_fsup = mean_fsup_tot;
 
-SE_energy = nanstd(medians_energy_subjs,0,1)/sqrt(n_subjs);
+SE_energy = nanstd(medians_energy_subjs,0,1)/sqrt(n_subjs);%0 flag -> normalization by n.
 SE_fc = nanstd(medians_fc_subjs,0,1)/sqrt(n_subjs);
 SE_fextra = nanstd(medians_fextra_subjs,0,1)/sqrt(n_subjs);
 SE_fneurite = nanstd(medians_fneurite_subjs,0,1)/sqrt(n_subjs);
@@ -780,7 +781,7 @@ SE_Din = nanstd(medians_Din_subjs,0,1)/sqrt(n_subjs);
 SE_De = nanstd(medians_De_subjs,0,1)/sqrt(n_subjs);
 SE_fsup = nanstd(medians_fsup_subjs,0,1)/sqrt(n_subjs);
 
-% in order to threshold based of coefficient of variation
+% in order to put a threshold based on coefficient of variation
 
 var_rsoma=SE_rsoma./mean_rsoma;
 var_fsoma=SE_fsoma./mean_fsoma;
@@ -794,25 +795,23 @@ var_De=SE_De./mean_De;
 
 mean_n_voxels_tot = mean(n_voxels_lst_allsubjs,1);
 
-regions=1:numel(mean_energy_tot);
-mean_n_voxels=mean_n_voxels_tot;
 % 
 % figure, bar(regions,mean_n_voxels_tot);
 % xlabel('regions','FontSize',15);
 % ylabel('mean number of voxels','FontSize',15);
 
-
 idx_low_n_voxels=[];
-for i=1:numel(regions)
+for i=1:n_regions
     if mean_n_voxels_tot(i)<prctile(mean_n_voxels_tot,40)%mean(mean_n_voxels)/5 %CHECK
         idx_low_n_voxels(end+1)=i;
     end
 end
 
-
-labels_tot=unique(V_atlas_tot(:));
+%%%remove idx with low n voxels
+labels_tot=regions;
 labels=labels_tot;
 labels(idx_low_n_voxels)=[];
+
 mean_n_voxels=mean_n_voxels_tot;
 mean_n_voxels(idx_low_n_voxels)=[];
 
@@ -826,6 +825,7 @@ mean_Din(idx_low_n_voxels)=[];
 mean_De(idx_low_n_voxels)=[];
 mean_fsup(idx_low_n_voxels)=[];
 
+%this array is needed for the MLR analysis
 mean_energy_high_n_voxels=mean_energy;
 mean_rsoma_high_n_voxels=mean_rsoma;
 mean_fsoma_high_n_voxels=mean_fsoma;
@@ -835,7 +835,6 @@ mean_fextra_high_n_voxels=mean_fextra;
 mean_fneurite_high_n_voxels=mean_fneurite;
 mean_Din_high_n_voxels=mean_Din;
 mean_De_high_n_voxels=mean_De;
-
 
 %this is to plot errors on both x and y values
 SE_energy(idx_low_n_voxels)=[];
@@ -864,16 +863,18 @@ var_fextra(idx_low_n_voxels)=[];
 var_Din(idx_low_n_voxels)=[];
 var_De(idx_low_n_voxels)=[];
 
+disp('First thresholding step successfully done');
 
-%idx_high_SE=find(SE_rsoma_tot>prctile(SE_rsoma_tot,95));
-%For now we used GM parameters
+%% Find indices corresponding to high coefficient of variation of microstructural parameters
+
 idx_high_var_rsoma=find(var_rsoma>prctile(var_rsoma,75));
 idx_high_var_fsoma=find(var_fsoma>prctile(var_fsoma,75));
 idx_high_var_fsup=find(var_fsup>prctile(var_fsup,75));
 idx_high_var_fc=find(var_fc>prctile(var_fc,75));
 idx_high_var_fneurite=find(var_fneurite>prctile(var_fneurite,75));
 
-disp('First thresholding step successfully done');
+%if based on SE instead of var
+%idx_high_SE=find(SE_rsoma_tot>prctile(SE_rsoma_tot,95));
 
 %% in order to do Energy vs one Microparameter analysis (run if corr analysis)
 
@@ -936,31 +937,6 @@ elseif strcmp(energy_parameter,'CMRO2')
     dependent_parameter='CMRO_2 (\mu mol/100g/min)';
 end
 
-% if any(isnan(mean_SANDI))%fsup can have some NaN values
-%     idx=find(isnan(mean_SANDI));
-%     mean_SANDI(idx)=[];
-%     mean_energy_nanparremoved=mean_energy_tot;
-%     mean_energy_nanparremoved(idx)=[];
-%     SE_energy_tot(idx)=[];
-%     SE_SANDI_tot(idx)=[];
-% else
-%     mean_energy_nanparremoved=mean_energy_tot;
-% end
-% % mean_fsoma=nanmean(reshaped_medians_fsoma,1);
-% % mean_energy=nanmean(reshaped_medians_energy,1);
-% % 
-% % n
-% % SE_energy = nanstd(reshaped_medians_energy,0,1)/sqrt(numel(reshaped_medians_energy(:,1)));
-% % SE_SANDI = nanstd(reshaped_medians_fsoma,0,1)/sqrt(numel(reshaped_medians_energy(:,1)));
-
-% % removing
-% % idx_13=find(mean_SANDI<13.6);
-% % 
-% % mean_SANDI(idx_13)=[];
-% % mean_energy(idx_13)=[];
-% % SE_energy(idx_13)=[];
-% % SE_SANDI(idx_13)=[];
-
 [r,p] = corrcoef(mean_energy, mean_SANDI, 'rows','complete');
 
 corr_coef = round(r(2),2);
@@ -970,10 +946,6 @@ p_value_str = num2str(p_value);
 
 P = polyfit(mean_SANDI,mean_energy,1);
 yfit_energy = P(1)*mean_SANDI+P(2);
-
-
-
-
 
 figure, 
 s = errorbar(mean_SANDI, mean_energy, SE_energy, SE_energy, SE_SANDI, SE_SANDI,'o');
@@ -992,6 +964,8 @@ elseif p(2)<0.01 && p(2)>0.001
     txt = {strcat('r = ',corr_coef_str,'**')};
 elseif p(2)<0.001
     txt = {strcat('r = ',corr_coef_str,'***')};
+elseif p(2)>0.05
+        txt = {strcat('r = ',corr_coef_str,'')};
 end
 % text(60,12,txt,'FontWeight', 'Bold');
 %annotation('textbox',[.6,.2,.30,.13], 'String', txt, 'FontWeight', 'Bold','FontSize',15);
@@ -1033,16 +1007,14 @@ grid on
 %a different one.
 idx_tot=unique([idx_high_var_rsoma,idx_high_var_fsoma,idx_high_var_fsup]);
 
-% mean_CBF_tot(idx_tot)=[];
-% mean_CMRO2_tot(idx_tot)=[];
-mean_energy_high_n_voxels(idx_tot)=[];%at this point you can try to apply a PLS
-% for CBF and one for CMRO2
+mean_energy_high_n_voxels(idx_tot)=[];
 mean_rsoma_high_n_voxels(idx_tot)=[];
 mean_fsoma_high_n_voxels(idx_tot)=[];
 mean_fsup_high_n_voxels(idx_tot)=[];
 mean_fc_high_n_voxels(idx_tot)=[];
 
 %% Matrix for correlation across subjs analysis (region by region)
+%for this analysis you need to use the matrix n_subjsxn_regions
 
 V_atlas=V_atlas_tot;
 labels_tot=unique(V_atlas);
@@ -1059,7 +1031,8 @@ labels_tot(idx_low_n_voxels)=[];
 if strcmp(micro_parameter,'Rsoma')
 
     medians_rsoma_thresholded_subjs(:,idx_low_n_voxels)=[];
-
+    
+    %remove indices corresponding to high var
     labels_tot(idx_high_var_rsoma)=[];
 
     medians_energy_thresholded_subjs(:,idx_high_var_rsoma)=[];
@@ -1084,17 +1057,6 @@ end
 
 %% check correlation distribution 
 
-%correlation between CBF and SANDI in each region
-
-% %this is done for all the "original" regions.
-% % you could remove columns corresponding to regions removed in reshaped_medians_CBF
-% %and reshaped_medians_SANDI
-% for i = 1:(numel(labels_tot))
-%     [r,p] = corrcoef(reshaped_medians_energy_tot(:,i), reshaped_medians_SANDI_tot(:,i),'rows','complete');
-%     z(i)=r(2);
-%     pvalue(i)=p(2);
-% end_tot
-
 if strcmp(micro_parameter,'Rsoma')
     medians_SANDI_thresholded_subjs = medians_rsoma_thresholded_subjs;
 elseif strcmp(micro_parameter,'fsoma')
@@ -1106,24 +1068,15 @@ end
 
 
 % 
-labels=labels_tot;
 z=[];
 pvalue=[];
-for i = 1:(numel(labels))
+for i = 1:n_regions
     [r,p] = corrcoef(medians_energy_thresholded_subjs(:,i), medians_SANDI_thresholded_subjs(:,i),'rows','complete');
     z(end+1)=r(2);
     pvalue(end+1)=p(2);
 end
 
-% z=[];
-% pvalue=[];
-% for i = 1:(numel(labels))
-%     [r,p] = corrcoef(reshaped_medians_energy(:,i), reshaped_medians_SANDI(:,i),'rows','complete');
-%     z(i)=r(2);
-%     pvalue(i)=p(2);
-% end
-
-
+% distribution without thresholding
 % figure, hist(z);
 % xlabel('correlation, r');
 % ylabel('# regions');
@@ -1168,6 +1121,7 @@ xlabel('Rsoma(\mum)','FontSize',15,'FontWeight','bold');
 ylabel('CMRO_2(\mumol/100g/min)','FontSize',15,'FontWeight','bold');
 grid on
 
+%plot only samples of regions significantly correlated across subjs
 medians_rsoma_tot_accepted=medians_SANDI_thresholded_subjs(:,[find(labels==7),find(labels==9),find(labels==30),find(labels==57),find(labels==94),find(labels==95)]);
 medians_energy_tot_accepted=medians_energy_thresholded_subjs(:,[find(labels==7),find(labels==9),find(labels==30),find(labels==57),find(labels==94),find(labels==95)]);
 
@@ -1203,6 +1157,7 @@ for ii = 1:length(V_atlas_tot(:))%lo fa per tutti i valori dell'immagine
         V_atlas(ii)=0;
     else
         idx=find(corr_and_regions(:,2)==V_atlas_tot(ii));
+        %substitute the corresponding corr coefficient
         corr=corr_and_regions(:,1);
         V_atlas(ii)=corr(idx);
     end
