@@ -49,14 +49,23 @@ for i = 1:1:n_subjs%lst
 %     img_path_fneurite = strcat('/media/nas_rete/Vitality/maps2MNI/250101/SANDItoMNI/',subj,'_',run,'_SANDI-fit_fneurite_2MNI2mm.nii.gz');
 %     img_path_fextra = strcat('/media/nas_rete/Vitality/maps2MNI/250101/SANDItoMNI/',subj,'_',run,'_SANDI-fit_fextra_2MNI2mm.nii.gz');
 
-%     %Linear Interpolation
-%     img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/250418_corrected_for_RIM/CBF02MNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CBF_map_2MNI.nii.gz');
-%     img_path_CMRO2 = strcat('/media/nas_rete/Vitality/registered/perf/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CMRO2_map.nii.gz'); %_2MNI2mm
+    %Linear Interpolation
+    img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/250418_corrected_for_RIM/CBF02MNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CBF_map_2MNI.nii.gz');
+    img_path_CMRO2 = strcat('/media/nas_rete/Vitality/registered/perf/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CMRO2_map.nii.gz'); %_2MNI2mm
     
-    %Nearest Neighbor Interpolation
-    img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/250627_NN_interpolation/CBF22MNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CBF_map_2MNI.nii.gz');
-    img_path_CMRO2 = strcat('/media/nas_rete/Vitality/maps2MNI/250627_NN_interpolation/CMRO22MNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CMRO2_map_2MNI.nii.gz'); %_2MNI2mm
- 
+%     %Nearest Neighbor Interpolation
+%     img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/250627_NN_interpolation/CBF22MNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CBF_map_2MNI.nii.gz');
+%     img_path_CMRO2 = strcat('/media/nas_rete/Vitality/maps2MNI/250627_NN_interpolation/CMRO22MNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CMRO2_map_2MNI.nii.gz'); %_2MNI2mm
+
+%     %Nearest Neighbor
+%     img_path_rsoma = strcat('/media/nas_rete/Vitality/maps2MNI/250627_NN_interpolation/SANDI2MNI/',subj,'_',run,'_SANDI-fit_Rsoma_2MNI.nii.gz');
+%     img_path_fsoma = strcat('/media/nas_rete/Vitality/maps2MNI/250627_NN_interpolation/SANDI2MNI/',subj,'_',run,'_SANDI-fit_fsoma_2MNI.nii.gz'); %_2MNI2mm
+%     img_path_De = strcat('/media/nas_rete/Vitality/maps2MNI/250627_NN_interpolation/SANDI2MNI/',subj,'_',run,'_SANDI-fit_fextra_2MNI.nii.gz');
+%     img_path_Din = strcat('/media/nas_rete/Vitality/maps2MNI/250627_NN_interpolation/SANDI2MNI/',subj,'_',run,'_SANDI-fit_fneurite_2MNI.nii.gz'); %_2MNI2mm
+%     img_path_fneurite = strcat('/media/nas_rete/Vitality/maps2MNI/250627_NN_interpolation/SANDI2MNI/',subj,'_',run,'_SANDI-fit_De_2MNI.nii.gz');
+%     img_path_fextra = strcat('/media/nas_rete/Vitality/maps2MNI/250627_NN_interpolation/SANDI2MNI/',subj,'_',run,'_SANDI-fit_Din_2MNI.nii.gz'); %_2MNI2mm
+
+    %Linear Interpolation
     img_path_rsoma = strcat('/media/nas_rete/Vitality/registered/SANDI/',subj,'_',run,'_SANDI-fit_Rsoma_2mm.nii.gz');
     img_path_fsoma = strcat('/media/nas_rete/Vitality/registered/SANDI/',subj,'_',run,'_SANDI-fit_fsoma_2mm.nii.gz');
     img_path_De = strcat('/media/nas_rete/Vitality/registered/SANDI/',subj,'_',run,'_SANDI-fit_De_2mm.nii.gz');
@@ -112,7 +121,7 @@ for i = 1:n_subjs
 
     
     for i = 1:length(V_rsoma(:))
-        if V_rsoma(i) < 5 
+        if V_rsoma(i) < 5
             V_rsoma(i)=0;
         end
     end
@@ -136,6 +145,9 @@ for i = 1:n_subjs
 
 end
 
+% first_fc=V_fc_tots{1};
+% figure, imagesc(first_fc(:,:,45))
+% clim([0,10^(14)]);
 %% superficial density (many subjects)
 
 V_fsup_tots={};
@@ -187,6 +199,7 @@ end
 % grid on
 
 %%
+%linear interpolation
 load('/media/nas_rete/Work_manuela/DWI_En_modeling_results/250625_IVMethod_withCBFandCMRO2separated/load_data.mat');
 
 %% The energy vs microstructural parameters relationship
@@ -550,7 +563,7 @@ for i = 1:1:n_subjs %1:1:length(lst)
         V_fsoma_to_mask(V_fsoma_to_mask>fsoma_threshold)=1;
         V_fsoma_to_mask(V_fsoma_to_mask<1)=0;
 
-        V_mask = V_atlas.*V_GM.*V_fsoma_to_mask;
+        V_mask = V_atlas.*V_GM;%.*V_fsoma_to_mask
 
 
         
@@ -686,6 +699,7 @@ disp(strcat('Total computing time =',num2str(round(timeElapsed/60,2)),'min'));
 micro_parameter='fneurite'; 
 
 %% remove outlier detected in GM corr across subjs section
+outlier_idx=26;
 corr_for_each_subj_energy_rsoma(outlier_idx)=[];
 corr_for_each_subj_energy_fsoma(outlier_idx)=[];
 corr_for_each_subj_energy_fsup(outlier_idx)=[];
@@ -731,11 +745,11 @@ else
 end
 
 title(strcat(energy_parameter, 'vs',micro_parameter));
-text(0.1,7,txt, 'FontWeight', 'bold','FontSize',15);
+text(-0.5,7,txt, 'FontWeight', 'bold','FontSize',15);
 grid on
 
 %% remove outlier detected in GM section
-
+outlier_idx=26;
 medians_energy_subjs(outlier_idx,:)=[];
 medians_rsoma_subjs(outlier_idx,:)=[];
 medians_fsoma_subjs(outlier_idx,:)=[];
@@ -908,7 +922,7 @@ end
 disp('Second thresholding step successfully done');
 
 %% plot energy vs microparameter 
-
+micro_parameter='Rsoma';
 if strcmp(micro_parameter,'Rsoma')
     mean_SANDI=mean_rsoma;
     SE_SANDI=SE_rsoma;
