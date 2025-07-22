@@ -49,13 +49,13 @@ for i = 1:1:n_subjs%lst
 %     img_path_fneurite = strcat('/media/nas_rete/Vitality/maps2MNI/250101/SANDItoMNI/',subj,'_',run,'_SANDI-fit_fneurite_2MNI2mm.nii.gz');
 %     img_path_fextra = strcat('/media/nas_rete/Vitality/maps2MNI/250101/SANDItoMNI/',subj,'_',run,'_SANDI-fit_fextra_2MNI2mm.nii.gz');
 
-    %Linear Interpolation
-    img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/250418_corrected_for_RIM/CBF02MNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CBF_map_2MNI.nii.gz');
-    img_path_CMRO2 = strcat('/media/nas_rete/Vitality/registered/perf/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CMRO2_map.nii.gz'); %_2MNI2mm
+%     %Linear Interpolation
+%     img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/250418_corrected_for_RIM/CBF02MNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CBF_map_2MNI.nii.gz');
+%     img_path_CMRO2 = strcat('/media/nas_rete/Vitality/registered/perf/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CMRO2_map.nii.gz'); %_2MNI2mm
     
-%     %Nearest Neighbor Interpolation
-%     img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/250627_NN_interpolation/CBF22MNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CBF_map_2MNI.nii.gz');
-%     img_path_CMRO2 = strcat('/media/nas_rete/Vitality/maps2MNI/250627_NN_interpolation/CMRO22MNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CMRO2_map_2MNI.nii.gz'); %_2MNI2mm
+    %Nearest Neighbor Interpolation
+    img_path_CBF = strcat('/media/nas_rete/Vitality/maps2MNI/250627_NN_interpolation/CBF22MNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CBF_map_2MNI.nii.gz');
+    img_path_CMRO2 = strcat('/media/nas_rete/Vitality/maps2MNI/250627_NN_interpolation/CMRO22MNI/',subj,'_task-bh_',run,'_dexi_volreg_asl_topup_CMRO2_map_2MNI.nii.gz'); %_2MNI2mm
 
 %     %Nearest Neighbor
 %     img_path_rsoma = strcat('/media/nas_rete/Vitality/maps2MNI/250627_NN_interpolation/SANDI2MNI/',subj,'_',run,'_SANDI-fit_Rsoma_2MNI.nii.gz');
@@ -564,6 +564,7 @@ for i = 1:1:n_subjs %1:1:length(lst)
         V_fsoma_to_mask(V_fsoma_to_mask<1)=0;
 
         V_mask = V_atlas.*V_GM;%.*V_fsoma_to_mask
+        V_mask_for_rsoma = V_atlas.*V_GM.*V_fsoma_to_mask;
 
 
         
@@ -576,7 +577,7 @@ for i = 1:1:n_subjs %1:1:length(lst)
         V_fc_masked = V_fc.*V_mask;
         V_fextra_masked = V_fextra.*V_mask;
         V_fneurite_masked = V_fneurite.*V_mask;
-        V_rsoma_masked = V_rsoma.*V_mask;
+        V_rsoma_masked = V_rsoma.*V_mask_for_rsoma;
         V_fsoma_masked = V_fsoma.*V_mask;
         V_Din_masked = V_Din.*V_mask;
         V_De_masked = V_De.*V_mask;
@@ -588,11 +589,12 @@ for i = 1:1:n_subjs %1:1:length(lst)
         
         %find zeros of the mask (so outside brain)
         mask_zeros=find(V_mask==0);
+        mask_for_rsoma_zeros = find(V_mask_for_rsoma==0);
 
         V_energy_masked(mask_zeros)=[];
         V_fc_masked(mask_zeros)=[];
         V_fsoma_masked(mask_zeros)=[];
-        V_rsoma_masked(mask_zeros)=[];
+        V_rsoma_masked(mask_for_rsoma_zeros)=[];
         V_fsup_masked(mask_zeros)=[];
         V_fneurite_masked(mask_zeros)=[];
         V_fextra_masked(mask_zeros)=[];
@@ -612,14 +614,20 @@ for i = 1:1:n_subjs %1:1:length(lst)
         V_energy_masked(indices_energy)=[];
         %remove the corresponding voxels in microstructural maps
         %otherwise you can have imbalance data problem
-        V_fc_masked(indices_energy)=[];
-        V_fsoma_masked(indices_energy)=[];
-        V_rsoma_masked(indices_energy)=[];
-        V_fsup_masked(indices_energy)=[];
-        V_fneurite_masked(indices_energy)=[];
-        V_fextra_masked(indices_energy)=[];
-        V_Din_masked(indices_energy)=[];
-        V_De_masked(indices_energy)=[];
+        
+        %calculate the percentage of voxels removed
+        %zeros_percentage=numel(indices_energy)/numel(V_fc_masked)*100
+
+%         %comment the following 8 lines of code if you don't want to remove
+%         %the energetic zero voxels
+%         V_fc_masked(indices_energy)=[];
+%         V_fsoma_masked(indices_energy)=[];
+%         V_rsoma_masked(indices_energy)=[];
+%         V_fsup_masked(indices_energy)=[];
+%         V_fneurite_masked(indices_energy)=[];
+%         V_fextra_masked(indices_energy)=[];
+%         V_Din_masked(indices_energy)=[];
+%         V_De_masked(indices_energy)=[];
 
 %        %check distribution here
 %        v_energy_masked_afterremovinginnerzeros=v_energy_masked;     
@@ -696,7 +704,7 @@ timeElapsed = toc(start_time);
 disp(strcat('Total computing time =',num2str(round(timeElapsed/60,2)),'min'));
 
 %% select parameters to investigate
-micro_parameter='fneurite'; 
+micro_parameter='Rsoma'; 
 
 %% remove outlier detected in GM corr across subjs section
 outlier_idx=26;
@@ -922,7 +930,7 @@ end
 disp('Second thresholding step successfully done');
 
 %% plot energy vs microparameter 
-micro_parameter='Rsoma';
+
 if strcmp(micro_parameter,'Rsoma')
     mean_SANDI=mean_rsoma;
     SE_SANDI=SE_rsoma;
@@ -1038,6 +1046,7 @@ medians_energy_thresholded_subjs=medians_energy_subjs;
 medians_fsoma_thresholded_subjs=medians_fsoma_subjs;
 medians_fsup_thresholded_subjs=medians_fsup_subjs;
 medians_rsoma_thresholded_subjs=medians_rsoma_subjs;
+medians_fc_thresholded_subjs=medians_fc_subjs;
 
 medians_energy_thresholded_subjs(:,idx_low_n_voxels)=[];
 labels_tot(idx_low_n_voxels)=[];
@@ -1066,7 +1075,13 @@ elseif strcmp(micro_parameter,'fsup')
     labels_tot(idx_high_var_fsup)=[];
     medians_energy_thresholded_subjs(:,idx_high_var_fsup)=[];
     medians_fsup_thresholded_subjs(:,idx_high_var_fsup)=[];
+elseif strcmp(micro_parameter,'fc')
 
+    medians_fc_thresholded_subjs(:,idx_low_n_voxels)=[];
+
+    labels_tot(idx_high_var_fc)=[];
+    medians_energy_thresholded_subjs(:,idx_high_var_fc)=[];
+    medians_fc_thresholded_subjs(:,idx_high_var_fc)=[];
 end
 
 %% check correlation distribution 
@@ -1233,14 +1248,15 @@ end
 
 %% plot spatially mean parametric maps
 
-
-labels=unique(V_atlas_tot);
-labels(labels==0)=[];
-diff=setxor(labels,unique(V_atlas_tot));
-diff=0;
+% 
+% labels=unique(V_atlas_tot);
+% labels(labels==0)=[];
+% labels_tot=labels;
+diff=setxor(labels_tot,unique(V_atlas_tot));
+% diff=0;
 
 V_atlas = V_atlas_tot;
-labels_and_par = [labels';mean_rsoma_tot].';
+labels_and_par = [labels_tot';medians_fc_thresholded_subjs].';%mean_fc_tot
 for ii = 1:length(V_atlas_tot(:))%lo fa per tutti i valori dell'immagine
     if any(0==V_atlas_tot(ii))
         V_atlas(ii)=0;
@@ -1265,18 +1281,25 @@ end
 h=axes(fig,'visible','off');
 %colormap Gray
 colorbar(h,'orientation','horizontal','Location','SouthOutside','FontSize',12);
-sgtitle('Regional correlation map thresholded for p<0.05')
-%caxis([-1,+1])
+sgtitle('Medians fc values')
+caxis([0,max(V_atlas(:))])
 
 %V_mean_energy_map=V_atlas;
 
-if strcmp(micro_parameter,'fsoma')
-    V_mean_fsoma_map=V_atlas;
-else
-    V_mean_rsoma_map=V_atlas;
-end
+% if strcmp(micro_parameter,'fsoma')
+%     V_mean_fsoma_map=V_atlas;
+% else
+%     V_mean_rsoma_map=V_atlas;
+% end
+
+V_median_fc_map_tot=V_atlas;
 
 
+hdr = niftiinfo(img_path_atlas);
+hdr.Datatype = 'double';
+hdr.ImageSize = size(V_atlas);
+niftiwrite(V_median_fc_map_tot,'/media/nas_rete/Work_manuela/DWI_En_modeling_results/250718_fc/fc_MNI_LinearInterp_ThirdVersion.nii',hdr,"Compressed",true);
+  
 
 
 %%
