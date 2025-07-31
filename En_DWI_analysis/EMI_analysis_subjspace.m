@@ -106,6 +106,82 @@ for i = start_subj:n_subjs
 
 end
 
+%% number of cells density map (many subjects) 
+
+V_fc_maps={};
+
+for i = 1:n_subjs    
+    V_rsoma = V_rsoma_maps{i};
+    V_fsoma = V_fsoma_maps{i};
+
+    
+    for i = 1:length(V_rsoma_maps(:))
+        if V_rsoma(i) < 5
+            V_rsoma(i)=0;
+        end
+    end
+    
+    
+    %convert to m^3
+    V_rsoma = V_rsoma.*10^-6;
+    
+    %voxel wise divide fs map over 4/3pir^3
+    fc_map = V_fsoma./((4/3)*pi*V_rsoma.^3);
+    %figure, imagesc(fc_map(:,:,45));
+    for i = 1:length(fc_map(:))
+        if fc_map(i)==Inf
+            fc_map(i)=NaN;%VALUTA SE METTERE A 0.
+    %     elseif isnan(fc_map(i))
+    %         fc_map(i)=0;
+        end
+    end
+
+    V_fc_tots{end+1} = fc_map;
+
+end
+
+%% superficial density (many subjects)
+
+V_fsup_maps={};
+
+for i = 1:n_subjs    
+    V_rsoma = V_rsoma_maps{i};
+    V_fsoma = V_fsoma_maps{i};
+        
+    for i = 1:length(V_rsoma(:))
+        if V_rsoma(i) < 5 %check
+            V_rsoma(i)=0;
+        end
+    end
+    
+    %convert to m^3
+    V_rsoma = V_rsoma.*10^-6;%Should it be 10^-6? Why is it measured as mm?
+    
+    %voxel wise divide fs map over 4/3pir^3
+    fsup_map = V_fsoma./V_rsoma;
+    fsup_map = 3*fsup_map;
+    %figure, imagesc(fc_map(:,:,45));
+    for i = 1:length(fsup_map(:))
+        if fsup_map(i)==Inf
+            fsup_map(i)=NaN;%VALUTA SE METTERE A 0.
+    %     elseif isnan(fc_map(i))
+    %         fc_map(i)=0;
+        end
+    end
+
+    V_fsup_tots{end+1} = fsup_map;
+
+end
+
+%
+% V_fsup_one=V_fsup_tots{1};
+% figure, imagesc(rot90(V_fsup_one(:,:,45)));
+% title('Superficial Soma Density map')
+% V_fsup_one_array=V_fsup_one(:);
+% figure, hist(V_fsup_one_array);
+% title('Superficial Soma Density Distribution');
+% grid on
+
 %%  Count total number of regions
 img_path_atlas='/storage/shared/Atlas/AAL3v1_2mm_resampled.nii.gz';
 Vhdr = spm_vol(img_path_atlas);
@@ -134,6 +210,9 @@ medians_CBF_subjs = zeros(n_subjs,n_regions);
 labels_dwi_subjs = zeros(n_subjs,n_regions);
 medians_rsoma_subjs = zeros(n_subjs,n_regions);
 medians_fsoma_subjs = zeros(n_subjs,n_regions);
+medians_fc_subjs = zeros(n_subjs,n_regions);
+medians_fsup_subjs = zeros(n_subjs,n_regions);
+
 medians_fneurite_subjs = zeros(n_subjs,n_regions);
 medians_fextra_subjs = zeros(n_subjs,n_regions);
 medians_Din_subjs = zeros(n_subjs,n_regions);
@@ -161,6 +240,9 @@ for subj = 1:n_subjs
 
     V_rsoma = V_rsoma_maps{subj};
     V_fsoma = V_fsoma_maps{subj};
+    V_fc = V_fc_maps{subj};
+    V_fsup = V_fsup_maps{subj};
+
     V_fneurite = V_fneurite_maps{subj};
     V_Din = V_Din_maps{subj};
     V_De = V_De_maps{subj};
@@ -172,6 +254,9 @@ for subj = 1:n_subjs
     medians_CBF_subj = [];
     medians_rsoma_subj = [];
     medians_fsoma_subj = [];
+    medians_fc_subj = [];
+    medians_fsup_subj = [];
+
     medians_fneurite_subj = [];
     medians_Din_subj = [];
     medians_De_subj = [];
@@ -295,6 +380,9 @@ for subj = 1:n_subjs
 
     V_rsoma_masked = V_rsoma.*V_mask_dwi_fs;
     V_fsoma_masked = V_fsoma.*V_mask_dwi;
+    V_fc_masked = V_fc.*V_mask_dwi;
+    V_fsup_masked = V_fsup.*V_mask_dwi;
+
     V_fneurite_masked = V_fneurite.*V_mask_dwi;  
     V_De_masked = V_De.*V_mask_dwi;
     V_Din_masked = V_Din.*V_mask_dwi;
@@ -309,6 +397,9 @@ for subj = 1:n_subjs
 
     V_rsoma_masked(mask_dwi_fs_zeros)=[];
     V_fsoma_masked(mask_dwi_zeros)=[];
+    V_fc_masked(mask_dwi_zeros)=[];
+    V_fsup_masked(mask_dwi_zeros)=[];
+    
     V_fneurite_masked(mask_dwi_zeros)=[];
     V_De_masked(mask_dwi_zeros)=[];
     V_Din_masked(mask_dwi_zeros)=[];
@@ -341,6 +432,9 @@ for subj = 1:n_subjs
     
     medians_rsoma_subj(end+1) = nanmedian(V_rsoma_masked);%
     medians_fsoma_subj(end+1) = nanmedian(V_fsoma_masked);%
+    medians_fc_subj(end+1) = nanmedian(V_fc_masked);%
+    medians_fsup_subj(end+1) = nanmedian(V_fsup_masked);%
+
     medians_fneurite_subj(end+1) = nanmedian(V_fneurite_masked);%
     medians_De_subj(end+1) = nanmedian(V_De_masked);%
     medians_Din_subj(end+1) = nanmedian(V_Din_masked);%
@@ -352,6 +446,9 @@ for subj = 1:n_subjs
     labels_dwi_subjs(subj,1:n_regions_dwi) = labels_dwi_subj;%
     medians_rsoma_subjs(subj,1:n_regions_dwi) = medians_rsoma_subj;%
     medians_fsoma_subjs(subj,1:n_regions_dwi) = medians_fsoma_subj;%
+    medians_fc_subjs(subj,1:n_regions_dwi) = medians_fc_subj;%
+    medians_fsup_subjs(subj,1:n_regions_dwi) = medians_fsup_subj;%
+
     medians_fneurite_subjs(subj,1:n_regions_dwi) = medians_fneurite_subj;%
     medians_Din_subjs(subj,1:n_regions_dwi) = medians_Din_subj;%
     medians_De_subjs(subj,1:n_regions_dwi) = medians_De_subj;%
@@ -795,81 +892,7 @@ grid on
 
 
 
-%% number of cells density map (many subjects) 
 
-V_fc_maps={};
-
-for i = 1:n_subjs    
-    V_rsoma = V_rsoma_maps{i};
-    V_fsoma = V_fsoma_maps{i};
-
-    
-    for i = 1:length(V_rsoma_maps(:))
-        if V_rsoma(i) < 5
-            V_rsoma(i)=0;
-        end
-    end
-    
-    
-    %convert to m^3
-    V_rsoma = V_rsoma.*10^-6;
-    
-    %voxel wise divide fs map over 4/3pir^3
-    fc_map = V_fsoma./((4/3)*pi*V_rsoma.^3);
-    %figure, imagesc(fc_map(:,:,45));
-    for i = 1:length(fc_map(:))
-        if fc_map(i)==Inf
-            fc_map(i)=NaN;%VALUTA SE METTERE A 0.
-    %     elseif isnan(fc_map(i))
-    %         fc_map(i)=0;
-        end
-    end
-
-    V_fc_tots{end+1} = fc_map;
-
-end
-
-%% superficial density (many subjects)
-
-V_fsup_maps={};
-
-for i = 1:n_subjs    
-    V_rsoma = V_rsoma_maps{i};
-    V_fsoma = V_fsoma_maps{i};
-        
-    for i = 1:length(V_rsoma(:))
-        if V_rsoma(i) < 5 %check
-            V_rsoma(i)=0;
-        end
-    end
-    
-    %convert to m^3
-    V_rsoma = V_rsoma.*10^-6;%Should it be 10^-6? Why is it measured as mm?
-    
-    %voxel wise divide fs map over 4/3pir^3
-    fsup_map = V_fsoma./V_rsoma;
-    fsup_map = 3*fsup_map;
-    %figure, imagesc(fc_map(:,:,45));
-    for i = 1:length(fsup_map(:))
-        if fsup_map(i)==Inf
-            fsup_map(i)=NaN;%VALUTA SE METTERE A 0.
-    %     elseif isnan(fc_map(i))
-    %         fc_map(i)=0;
-        end
-    end
-
-    V_fsup_tots{end+1} = fsup_map;
-
-end
-
-%
-% V_fsup_one=V_fsup_tots{1};
-% figure, imagesc(rot90(V_fsup_one(:,:,45)));
-% title('Superficial Soma Density map')
-% V_fsup_one_array=V_fsup_one(:);
-% figure, hist(V_fsup_one_array);
-% title('Superficial Soma Density Distribution');
-% grid on
 
 
 %% across subjs (GM median)
