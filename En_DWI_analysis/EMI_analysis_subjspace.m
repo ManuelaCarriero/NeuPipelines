@@ -4,7 +4,7 @@ run='run-01';
 subjects = importdata(strcat('/media/nas_rete/Vitality/code/subjs_DWI.txt'));
 n_subjs=length(subjects);
 start_subj=1;
-
+%%
 %load pve on subj space
 V_pves_dwi={};
 V_pves_func={};
@@ -48,8 +48,8 @@ for i = start_subj:n_subjs
 end
 
 %load parametric maps
-V_CMRO2_maps={};
-V_CBF_maps={};
+% V_CMRO2_maps={};
+% V_CBF_maps={};
 
 V_rsoma_maps={};
 V_fsoma_maps={};
@@ -58,27 +58,37 @@ V_De_maps={};
 V_Din_maps={};
 V_fextra_maps={};
 
+V_mse_maps={};
+
 for i = start_subj:n_subjs
     
     subj = subjects{i};
     
-    img_path_CMRO2=strcat('/media/nas_rete/Vitality/derivatives/',subj,'/perf/outcome/',subj,'_task-bh_',run,'_acq-dexi_volreg_asl_topup_CMRO2_map.nii.gz');
-    img_path_CBF=strcat('/media/nas_rete/Vitality/derivatives/',subj,'/perf/outcome/',subj,'_task-bh_',run,'_acq-dexi_volreg_asl_topup_CBF_map.nii.gz');
+%     img_path_CMRO2=strcat('/media/nas_rete/Vitality/derivatives/',subj,'/perf/outcome/',subj,'_task-bh_',run,'_acq-dexi_volreg_asl_topup_CMRO2_map.nii.gz');
+%     img_path_CBF=strcat('/media/nas_rete/Vitality/derivatives/',subj,'/perf/outcome/',subj,'_task-bh_',run,'_acq-dexi_volreg_asl_topup_CBF_map.nii.gz');
 
-    img_path_rsoma=strcat('/media/nas_rete/Vitality/derivatives/',subj,'/dwi/SANDI_Output/',subj,'_',run,'_SANDI-fit_Rsoma.nii.gz');
-    img_path_fsoma=strcat('/media/nas_rete/Vitality/derivatives/',subj,'/dwi/SANDI_Output/',subj,'_',run,'_SANDI-fit_fsoma.nii.gz');
-    img_path_fneurite=strcat('/media/nas_rete/Vitality/derivatives/',subj,'/dwi/SANDI_Output/',subj,'_',run,'_SANDI-fit_fneurite.nii.gz');
-    img_path_De=strcat('/media/nas_rete/Vitality/derivatives/',subj,'/dwi/SANDI_Output/',subj,'_',run,'_SANDI-fit_De.nii.gz');
-    img_path_Din=strcat('/media/nas_rete/Vitality/derivatives/',subj,'/dwi/SANDI_Output/',subj,'_',run,'_SANDI-fit_Din.nii.gz');
-    img_path_fextra=strcat('/media/nas_rete/Vitality/derivatives/',subj,'/dwi/SANDI_Output/',subj,'_',run,'_SANDI-fit_fextra.nii.gz');
+%     img_path_rsoma=strcat('/media/nas_rete/Vitality/derivatives/',subj,'/dwi/SANDI_Output/',subj,'_',run,'_SANDI-fit_Rsoma.nii.gz');
+%     img_path_fsoma=strcat('/media/nas_rete/Vitality/derivatives/',subj,'/dwi/SANDI_Output/',subj,'_',run,'_SANDI-fit_fsoma.nii.gz');
+%     img_path_fneurite=strcat('/media/nas_rete/Vitality/derivatives/',subj,'/dwi/SANDI_Output/',subj,'_',run,'_SANDI-fit_fneurite.nii.gz');
+%     img_path_De=strcat('/media/nas_rete/Vitality/derivatives/',subj,'/dwi/SANDI_Output/',subj,'_',run,'_SANDI-fit_De.nii.gz');
+%     img_path_Din=strcat('/media/nas_rete/Vitality/derivatives/',subj,'/dwi/SANDI_Output/',subj,'_',run,'_SANDI-fit_Din.nii.gz');
+%     img_path_fextra=strcat('/media/nas_rete/Vitality/derivatives/',subj,'/dwi/SANDI_Output/',subj,'_',run,'_SANDI-fit_fextra.nii.gz');
+%     img_path_mse=strcat('/media/nas_rete/Vitality/derivatives/',subj,'/dwi/SANDI_Output/',subj,'_',run,'_SANDI-fit_mse.nii.gz');
+    img_path_rsoma=strcat('/media/nas_rete/Work_manuela/Vitality_data_SANDInewrelease/',subj,'/SANDI_output/',subj,'_',run,'_SANDI-fit_Rsoma.nii.gz');
+    img_path_fsoma=strcat('/media/nas_rete/Work_manuela/Vitality_data_SANDInewrelease/',subj,'/SANDI_output/',subj,'_',run,'_SANDI-fit_fsoma.nii.gz');
+    img_path_fneurite=strcat('/media/nas_rete/Work_manuela/Vitality_data_SANDInewrelease/',subj,'/SANDI_output/',subj,'_',run,'_SANDI-fit_fneurite.nii.gz');
+    img_path_De=strcat('/media/nas_rete/Work_manuela/Vitality_data_SANDInewrelease/',subj,'/SANDI_output/',subj,'_',run,'_SANDI-fit_De.nii.gz');
+    img_path_Din=strcat('/media/nas_rete/Work_manuela/Vitality_data_SANDInewrelease/',subj,'/SANDI_output/',subj,'_',run,'_SANDI-fit_Din.nii.gz');
+    img_path_fextra=strcat('/media/nas_rete/Work_manuela/Vitality_data_SANDInewrelease/',subj,'/SANDI_output/',subj,'_',run,'_SANDI-fit_fextra.nii.gz');
+    img_path_mse=strcat('/media/nas_rete/Work_manuela/Vitality_data_SANDInewrelease/',subj,'/SANDI_output/',subj,'_',run,'_SANDI-fit_mse.nii.gz');
 
-    V_vol_CMRO2 = spm_vol(img_path_CMRO2);
-    V_CMRO2=spm_read_vols(V_vol_CMRO2);
-    V_CMRO2_maps{end+1}=V_CMRO2;
-
-    V_vol_CBF = spm_vol(img_path_CBF);
-    V_CBF=spm_read_vols(V_vol_CBF);
-    V_CBF_maps{end+1}=V_CBF;
+%     V_vol_CMRO2 = spm_vol(img_path_CMRO2);
+%     V_CMRO2=spm_read_vols(V_vol_CMRO2);
+%     V_CMRO2_maps{end+1}=V_CMRO2;
+% 
+%     V_vol_CBF = spm_vol(img_path_CBF);
+%     V_CBF=spm_read_vols(V_vol_CBF);
+%     V_CBF_maps{end+1}=V_CBF;
 
     V_vol_rsoma = spm_vol(img_path_rsoma);
     V_rsoma=spm_read_vols(V_vol_rsoma);
@@ -104,7 +114,15 @@ for i = start_subj:n_subjs
     V_fextra=spm_read_vols(V_vol_fextra);
     V_fextra_maps{end+1}=V_fextra;
 
+    V_vol_mse = spm_vol(img_path_mse);
+    V_mse=spm_read_vols(V_vol_mse);
+    V_mse_maps{end+1}=V_mse;
+
 end
+
+%% select binary masks thresholds
+pve_threshold=0.5;
+fsoma_threshold=0.15;
 
 %% number of cells density map (many subjects) 
 
@@ -113,20 +131,26 @@ V_fc_maps={};
 for i = 1:n_subjs    
     V_rsoma = V_rsoma_maps{i};
     V_fsoma = V_fsoma_maps{i};
-
+    V_pve = V_pves_dwi{i};
     
     for i = 1:length(V_rsoma_maps(:))
-        if V_rsoma(i) < 5
+        if V_rsoma(i) < 4
             V_rsoma(i)=0;
         end
     end
     
+    V_pve(V_pve>pve_threshold)=1;
+    V_pve(V_pve<1)=0;
+    V_fsoma_to_mask=V_fsoma;
+    V_fsoma_to_mask(V_fsoma_to_mask>fsoma_threshold)=1;
+    V_fsoma_to_mask(V_fsoma_to_mask<1)=0;
+    V_rsoma_masked = V_rsoma.*V_fsoma_to_mask.*V_pve;
     
     %convert to m^3
-    V_rsoma = V_rsoma.*10^-6;
+    V_rsoma_masked = V_rsoma_masked.*10^-6;
     
     %voxel wise divide fs map over 4/3pir^3
-    fc_map = V_fsoma./((4/3)*pi*V_rsoma.^3);
+    fc_map = V_fsoma./((4/3)*pi*V_rsoma_masked.^3);
     %figure, imagesc(fc_map(:,:,45));
     for i = 1:length(fc_map(:))
         if fc_map(i)==Inf
@@ -136,10 +160,17 @@ for i = 1:n_subjs
         end
     end
 
-    V_fc_tots{end+1} = fc_map;
+    V_fc_maps{end+1} = fc_map;
 
 end
 
+%find a method to remove too much high values at the borders.
+fc_1=V_fc_maps{1}*10^(-9);
+figure, imagesc(rot90(fc_1(:,:,40)))
+title('Numerical soma density')
+clim([0,100000])
+
+%For the remaining unresonable values, you could try MSE threshold.
 %% superficial density (many subjects)
 
 V_fsup_maps={};
@@ -147,18 +178,26 @@ V_fsup_maps={};
 for i = 1:n_subjs    
     V_rsoma = V_rsoma_maps{i};
     V_fsoma = V_fsoma_maps{i};
-        
-    for i = 1:length(V_rsoma(:))
-        if V_rsoma(i) < 5 %check
+    V_pve = V_pves_dwi{i};
+    
+    for i = 1:length(V_rsoma_maps(:))
+        if V_rsoma(i) < 4
             V_rsoma(i)=0;
         end
     end
     
+    V_pve(V_pve>pve_threshold)=1;
+    V_pve(V_pve<1)=0;
+    V_fsoma_to_mask=V_fsoma;
+    V_fsoma_to_mask(V_fsoma_to_mask>fsoma_threshold)=1;
+    V_fsoma_to_mask(V_fsoma_to_mask<1)=0;
+    V_rsoma_masked = V_rsoma.*V_fsoma_to_mask.*V_pve;
+
     %convert to m^3
-    V_rsoma = V_rsoma.*10^-6;%Should it be 10^-6? Why is it measured as mm?
-    
+    V_rsoma_masked = V_rsoma_masked.*10^-6;    
+
     %voxel wise divide fs map over 4/3pir^3
-    fsup_map = V_fsoma./V_rsoma;
+    fsup_map = V_fsoma./V_rsoma_masked;
     fsup_map = 3*fsup_map;
     %figure, imagesc(fc_map(:,:,45));
     for i = 1:length(fsup_map(:))
@@ -169,18 +208,17 @@ for i = 1:n_subjs
         end
     end
 
-    V_fsup_tots{end+1} = fsup_map;
+    V_fsup_maps{end+1} = fsup_map;
 
 end
 
-%
-% V_fsup_one=V_fsup_tots{1};
-% figure, imagesc(rot90(V_fsup_one(:,:,45)));
-% title('Superficial Soma Density map')
-% V_fsup_one_array=V_fsup_one(:);
-% figure, hist(V_fsup_one_array);
-% title('Superficial Soma Density Distribution');
-% grid on
+V_fsup_one=V_fsup_maps{1}.*10^(-6);
+figure, imagesc(rot90(V_fsup_one(:,:,40)));
+title('Superficial Soma Density map')
+% % V_fsup_one_array=V_fsup_one(:);
+% % figure, hist(V_fsup_one_array);
+% % title('Superficial Soma Density Distribution');
+% % grid on
 
 %%  Count total number of regions
 img_path_atlas='/storage/shared/Atlas/AAL3v1_2mm_resampled.nii.gz';
@@ -192,9 +230,7 @@ regions = unique(V_atlas_tot(:));
 regions(1)=[];
 n_regions=numel(regions);
 
-%% select binary masks thresholds
-pve_threshold=0.5;
-fsoma_threshold=0.15;
+
 
 %% compute medians
 %prepare empty matrices with maximum size 
@@ -471,6 +507,10 @@ if strcmp(micro_parameter,'Rsoma')
     medians_dwi_subjs = medians_rsoma_subjs;
 elseif strcmp(micro_parameter,'fsoma')
     medians_dwi_subjs = medians_fsoma_subjs;
+elseif strcmp(micro_parameter,'fsup')
+    medians_dwi_subjs = medians_fsup_subjs;
+elseif strcmp(micro_parameter,'fc')
+    medians_dwi_subjs = medians_fc_subjs;
 end
 
 if strcmp(energy_parameter,'CMRO2')
@@ -484,7 +524,7 @@ elseif strcmp(energy_parameter,'CBF')
 end
 
 
-
+%% The following blocks are to select common regions
 
 %% dwi space 
 
@@ -747,6 +787,9 @@ disp('Regions with high number of NaNs successfully removed');
 
 %% across regions (medians across subjs)
 
+medians_func = medians_func_subjs_final_spaces;
+medians_dwi = medians_dwi_subjs_final_spaces;
+
 if strcmp(energy_parameter,'CBF')   
     dependent_parameter='CBF (ml/100g/min)';
 elseif strcmp(energy_parameter,'CMRO2')
@@ -763,17 +806,17 @@ if strcmp(micro_parameter,'Rsoma')
     unit_of_measure='(\mum)';
 elseif strcmp(micro_parameter,'fsoma')
     unit_of_measure='';
-% elseif strcmp(micro_parameter,'fsup')
-%     unit_of_measure='(m^{-1})';
-% elseif strcmp(micro_parameter,'fc')
-%     unit_of_measure='(m^{-3})';
+elseif strcmp(micro_parameter,'fsup')
+    unit_of_measure='(m^{-1})';
+elseif strcmp(micro_parameter,'fc')
+    unit_of_measure='(m^{-3})';
 elseif strcmp(micro_parameter,'fneurite')
     unit_of_measure='';
 end
 
 %% Run if you to remove outliers identified by eyes
 
-idx_outlier=find(medians_micro_parameter_vec<12.7);
+idx_outlier=find(medians_energy_vec>250);
 
 medians_energy_vec(idx_outlier)=[];
 medians_micro_parameter_vec(idx_outlier)=[];
@@ -785,27 +828,38 @@ SE_micro_parameter(idx_outlier)=[];
 %try other kind of correlation
 corr_coef_str=num2str(round(r(2),2));
 
-% % remove nan microstructural regions
-% idx = find(isnan(medians_micro_parameter_vec))
-% medians_energy_vec(idx)=[];
-% medians_micro_parameter_vec(idx)=[];
-% SE_energy(idx)=[];
-% SE_micro_parameter(idx)=[];
-% 
-% y=medians_energy_vec;
-% x=medians_micro_parameter_vec;
-% % Fit a quadratic equation
-% p = polyfit(x, y, 2);
-% % Evaluate the fitted polynomial
-% y_fit = polyval(p, x);
-% % Calculate the R-squared value
-% Rsquared = 1 - sum((y - y_fit).^2) / sum((y - nanmean(y)).^2);
+% remove nan microstructural regions
+idx = find(isnan(medians_micro_parameter_vec))
+medians_energy_vec(idx)=[];
+medians_micro_parameter_vec(idx)=[];
+SE_energy(idx)=[];
+SE_micro_parameter(idx)=[];
+
+idx = find(isnan(medians_energy_vec))
+medians_energy_vec(idx)=[];
+medians_micro_parameter_vec(idx)=[];
+SE_energy(idx)=[];
+SE_micro_parameter(idx)=[];
+
+y=medians_energy_vec;
+x=medians_micro_parameter_vec;
+% Fit a quadratic equation
+pol = polyfit(x, y, 1);
+% Evaluate the fitted polynomial
+y_fit = polyval(pol, x);
+% Calculate the R-squared value
+Rsquared = 1 - sum((y - y_fit).^2) / sum((y - nanmean(y)).^2);
+Rsquared
+
+[x_sorted,index] = sortrows(x');
+y_fit=y_fit';
+y_fit_sorted = y_fit(index);
 
 %%
 figure, 
 s = errorbar(medians_micro_parameter_vec, medians_energy_vec, SE_energy, SE_energy, SE_micro_parameter, SE_micro_parameter,'o');
-% hold on
-% plot(x,y_fit,'--','LineWidth',3,'Color',"#000000");
+hold on
+plot(x_sorted,y_fit_sorted,'--','LineWidth',3,'Color',"#000000");
 xlabel(strcat(micro_parameter,unit_of_measure),'FontSize',15,'FontWeight','bold');
 ylabel(dependent_parameter,'FontSize',15,'FontWeight','bold');
 s.LineWidth = 0.6;
@@ -820,8 +874,8 @@ elseif p(2)<0.001
 elseif p(2)>0.05
         txt = {strcat('r = ',corr_coef_str,'')};
 end
-% text(60,12,txt,'FontWeight', 'Bold');
-%annotation('textbox',[.6,.2,.30,.13], 'String', txt, 'FontWeight', 'Bold','FontSize',15);
+text(60,12,txt,'FontWeight', 'Bold');
+annotation('textbox',[.6,.2,.30,.13], 'String', txt, 'FontWeight', 'Bold','FontSize',15);
 if strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'Rsoma')
     text(13.8,60,txt, 'FontWeight', 'bold','FontSize',12);
 elseif strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'fsoma')
