@@ -26,6 +26,25 @@ for i = start_subj:n_subjs
 
 end
 
+%% plot pves to check
+
+% V_pves_0_dwi_first=V_pves_0_dwi{1};
+% % figure, imagesc(V_pves_0_dwi_first(:,:,45))
+% 
+% thr=0.1;
+% V_pves_0_dwi_first(V_pves_0_dwi_first<thr)=1;
+% V_pves_0_dwi_first(V_pves_0_dwi_first<1)=0;
+% figure, imagesc(V_pves_0_dwi_first(:,:,45))
+% title(num2str(thr))
+% 
+% V_pves_1_dwi_first=V_pves_1_dwi{1};
+% V_pves_1_dwi_first(V_pves_1_dwi_first>0.5)=1;
+% V_pves_1_dwi_first(V_pves_1_dwi_first<1)=0;
+% % figure, imagesc(V_pves_1_dwi_first(:,:,45))
+% 
+% V_refined = V_pves_0_dwi_first.*V_pves_1_dwi_first;
+% figure, imagesc(V_refined(:,:,45))
+%%
 %load atlas on subj space
 V_atlases_dwi={};
 V_atlases_func={};
@@ -124,7 +143,9 @@ end
 
 
 %% select binary masks thresholds
-pve_threshold=0.5;
+pve_1_threshold=0.5;
+pve_0_threshold=0.4;%threshold beyond which the CSF is set to 0
+pve_2_threshold=0.4;%
 fsoma_threshold=0.15;
 
 %% number of cells density map (many subjects) 
@@ -233,7 +254,8 @@ regions = unique(V_atlas_tot(:));
 regions(1)=[];
 n_regions=numel(regions);
 
-
+%% in case you don't have the original atlas
+n_regions=165;
 
 %% compute medians
 %prepare empty matrices with maximum size 
@@ -266,7 +288,7 @@ percentage_removal_rsoma_subjs = zeros(n_subjs,n_regions);
 
 medians_mse_subjs = zeros(n_subjs,n_regions);
 medians_mse_rsoma_subjs = zeros(n_subjs,n_regions);
-
+percentage_nans_rsoma_subjs = zeros(n_subjs,n_regions);%%%%
 
 start_time=tic;
 for subj = 1:n_subjs
@@ -276,8 +298,12 @@ for subj = 1:n_subjs
     V_atlas_dwi = V_atlases_dwi{subj};
 
     %load pve maps
-    V_pve_func = V_pves_func{subj};
-    V_pve_dwi = V_pves_dwi{subj};
+    V_pve_1_func = V_pves_1_func{subj};
+    V_pve_1_dwi = V_pves_1_dwi{subj};
+    V_pve_0_func = V_pves_0_func{subj};
+    V_pve_0_dwi = V_pves_0_dwi{subj};
+    V_pve_2_func = V_pves_2_func{subj};
+    V_pve_2_dwi = V_pves_2_dwi{subj};
 
     %load parametric maps
     V_CMRO2 = V_CMRO2_maps{subj};
@@ -317,6 +343,7 @@ for subj = 1:n_subjs
     percentage_nans_CMRO2_subj = [];
     percentage_removal_microparameter_subj = [];
     percentage_removal_rsoma_subj = [];
+    percentage_nans_rsoma_subj=[];%%%%
 
     %FUNC SPACE
     %list of regions (it can vary among subjs and among spaces)
@@ -336,9 +363,31 @@ for subj = 1:n_subjs
         end
     end
     %define mask
-    V_pve_func(V_pve_func>pve_threshold)=1;
-    V_pve_func(V_pve_func<1)=0;
-    V_mask_func = V_pve_func.*V_atlas_mask_func;
+    V_pve_1_func(V_pve_1_func>pve_1_threshold)=1;
+    V_pve_1_func(V_pve_1_func<1)=0;
+
+    % %In case you want to mask by considering not all the WM
+    % V_pve_2_func(V_pve_2_func<pve_2_threshold)=NaN;    
+    % V_pve_2_func(V_pve_2_func>=pve_2_threshold)=0;
+    % V_pve_2_func(isnan(V_pve_2_func))=1;
+
+    %in case you want all the WM
+    V_pve_2_func(V_pve_2_func==0)=NaN;
+    V_pve_2_func(V_pve_2_func>0)=0;
+    V_pve_2_func(isnan(V_pve_2_func))=1;
+
+    % %In case you want to mask by considering not all the WM
+    % V_pve_0_func(V_pve_0_func<pve_0_threshold)=NaN;
+    % V_pve_0_func(V_pve_0_func>=pve_0_threshold)=0;
+    % V_pve_0_func(isnan(V_pve_0_func))=1;
+
+    %in case you want all the CSF
+    V_pve_0_func(V_pve_0_func==0)=NaN;
+    V_pve_0_func(V_pve_0_func>0)=0;
+    V_pve_0_func(isnan(V_pve_0_func))=1;
+
+    V_GM = V_pve_1_func.*V_pve_0_func.*V_pve_2_func;
+    V_mask_func = V_GM.*V_atlas_mask_func;
 
     %mask
 
@@ -421,9 +470,31 @@ for subj = 1:n_subjs
     V_fsoma_to_mask(V_fsoma_to_mask>fsoma_threshold)=1;
     V_fsoma_to_mask(V_fsoma_to_mask<1)=0;
 
-    V_pve_dwi(V_pve_dwi>pve_threshold)=1;
-    V_pve_dwi(V_pve_dwi<1)=0;
-    V_mask_dwi = V_pve_dwi.*V_atlas_mask_dwi;
+    V_pve_1_dwi(V_pve_1_dwi>pve_1_threshold)=1;
+    V_pve_1_dwi(V_pve_1_dwi<1)=0;
+
+    % %In case you want to mask by considering not all the WM
+    % V_pve_2_dwi(V_pve_2_dwi<pve_2_threshold)=NaN;    
+    % V_pve_2_dwi(V_pve_2_dwi>=pve_2_threshold)=0;
+    % V_pve_2_dwi(isnan(V_pve_2_dwi))=1;
+
+    %in case you want all the WM
+    V_pve_2_dwi(V_pve_2_dwi==0)=NaN;
+    V_pve_2_dwi(V_pve_2_dwi>0)=0;
+    V_pve_2_dwi(isnan(V_pve_2_dwi))=1;
+
+    % %In case you want to mask by considering not all the WM
+    % V_pve_0_dwi(V_pve_0_dwi<pve_0_threshold)=NaN;
+    % V_pve_0_dwi(V_pve_0_dwi>=pve_0_threshold)=0;
+    % V_pve_0_dwi(isnan(V_pve_0_dwi))=1;
+
+    %in case you want all the CSF
+    V_pve_0_dwi(V_pve_0_dwi==0)=NaN;
+    V_pve_0_dwi(V_pve_0_dwi>0)=0;
+    V_pve_0_dwi(isnan(V_pve_0_dwi))=1;
+
+    V_GM = V_pve_1_dwi.*V_pve_2_dwi.*V_pve_0_dwi;
+    V_mask_dwi = V_GM.*V_atlas_mask_dwi;
     V_mask_dwi_fs = V_mask_dwi.*V_fsoma_to_mask;
 
     %mask
@@ -479,6 +550,12 @@ for subj = 1:n_subjs
     V_Din_masked(idx_high_MSE_micropar)=[];
     V_fextra_masked(idx_high_MSE_micropar)=[];
 
+    n_rsoma_region_voxels_tot = numel(V_rsoma_masked);%%%%
+    rsoma_nans=find(isnan(V_rsoma_masked));%%%%
+    n_rsoma_nans=length(rsoma_nans);%%%%
+    percentage_nans_rsoma=n_rsoma_nans/n_rsoma_region_voxels_tot;%%%%
+    percentage_nans_rsoma_subj(end+1)=percentage_nans_rsoma;%%%%
+
     %compute medians and save results
     
     medians_rsoma_subj(end+1) = nanmedian(V_rsoma_masked);%
@@ -496,7 +573,7 @@ for subj = 1:n_subjs
     labels_dwi_subj(end+1) = regions_dwi(region);%   
     
     percentage_removal_microparameter_subj(end+1) = percentage_high_MSE_micropar;
-    percentage_removal_rsoma_subj(end+1) = percentage_high_MSE_rsoma;
+    percentage_removal_rsoma_subj(end+1) = percentage_high_MSE_rsoma;%%%
    
     end
     
@@ -515,7 +592,7 @@ for subj = 1:n_subjs
     medians_mse_subjs(subj,1:n_regions_dwi)=medians_rsoma_subj;
     percentage_removal_microparameter_subjs(subj,1:n_regions_dwi) = percentage_removal_microparameter_subj;
     percentage_removal_rsoma_subjs(subj,1:n_regions_dwi) = percentage_removal_rsoma_subj;
-%    
+    percentage_nans_rsoma_subjs(subj,1:n_regions_dwi)=percentage_nans_rsoma_subj;%%%%
     toc
     disp(strcat('Finished subject', num2str(subj),'Starting subject', num2str(subj+1)))
 
@@ -883,6 +960,9 @@ medians_mse = medians_mse_rsoma_subjs_final_spaces;
 medians_func(:,regions_idx)=[];
 medians_dwi(:,regions_idx)=[];
 medians_mse(:,regions_idx)=[];
+
+labels_final=labels_func_subjs_final_spaces(1,:);
+labels_final(regions_idx)=[];
 disp('Regions with high number of NaNs successfully removed');
 
 %% Remove regions based on the number of high idx MSE
@@ -958,31 +1038,60 @@ figure,
 bar(cv_micro_parameter);
 legend('CV')
 
-idx_mse = find(medians_mse>prctile(medians_mse,75));
-isequal(labels_func_subjs_final_spaces,labels_dwi_subjs_final_spaces)
-labels_final = labels_func_subjs_final_spaces;
 
+
+idx_mse = find(medians_mse>prctile(medians_mse,75));
+% isequal(labels_func_subjs_final_spaces,labels_dwi_subjs_final_spaces)
 labels_high_mse=labels_final(idx_mse);
 
 %CV
 idx_cv = find(cv_micro_parameter>prctile(cv_micro_parameter,75));
 labels_high_cv = labels_final(idx_cv);
-size(labels_high_mse)==size(labels_high_cv)
-equal_labels=sum(labels_high_cv==labels_high_mse);
-percentage_equal_labels=equal_labels/numel(labels_high_mse);% 58%
+%size(labels_high_mse)==size(labels_high_cv)
+
+%find labels that have both high cv and high MSE
+equal_labels=intersect(labels_high_cv,labels_high_mse);
+percentage_equal_labels=numel(equal_labels)/numel(labels_high_mse);% 58%
 percentage_equal_labels
+
 %SE
 idx_SE = find(SE_micro_parameter>prctile(SE_micro_parameter,75));
 labels_high_SE = labels_final(idx_SE);
 %size(labels_high_mse)==size(labels_high_SE)
-equal_labels=sum(labels_high_SE==labels_high_mse);
-percentage_equal_labels=equal_labels/numel(labels_high_mse);% 62%
+
+%find labels that have both high SE and MSE
+equal_labels=intersect(labels_high_SE,labels_high_mse);
+percentage_equal_labels=numel(equal_labels)/numel(labels_high_mse);% 55%
 percentage_equal_labels
 
-equal_labels_idx = find(labels_high_SE==labels_high_mse);
+equal_labels_idx_SE_MSE=[];
+for i = 1:numel(equal_labels)
+    idx=find(labels_final==equal_labels(i));
+    equal_labels_idx_SE_MSE(end+1)=idx;
+end
+
 % V_mse_maps_1=V_mse_maps{1};
 % median(V_mse_maps_1(:))
 % figure, imagesc(V_mse_maps_1(:,:,40))
+
+%% remove regions which have high SE and MSE values
+medians_energy_vec(equal_labels_idx_SE_MSE)=[];
+medians_micro_parameter_vec(equal_labels_idx_SE_MSE)=[];
+SE_energy(equal_labels_idx_SE_MSE)=[];
+SE_micro_parameter(equal_labels_idx_SE_MSE)=[];
+
+%% remove regions which have high SE values
+medians_energy_vec(idx_SE)=[];
+medians_micro_parameter_vec(idx_SE)=[];
+SE_energy(idx_SE)=[];
+SE_micro_parameter(idx_SE)=[];
+
+%% remove regions which have high CV values
+medians_energy_vec(idx_cv)=[];
+medians_micro_parameter_vec(idx_cv)=[];
+SE_energy(idx_cv)=[];
+SE_micro_parameter(idx_cv)=[];
+
 %%
 
 if strcmp(micro_parameter,'Rsoma')
@@ -998,14 +1107,18 @@ elseif strcmp(micro_parameter,'fneurite')
 end
 
 %% Run if you to remove outliers identified by eyes
-
-idx_outlier=find(medians_energy_vec>250);
+rsoma_limit=13.5;
+idx_outlier=find(medians_micro_parameter_vec<rsoma_limit);
 
 medians_energy_vec(idx_outlier)=[];
 medians_micro_parameter_vec(idx_outlier)=[];
 SE_energy(idx_outlier)=[];
 SE_micro_parameter(idx_outlier)=[];
 
+% %find which are low rsoma regions
+% disp(strcat('Lower rsoma labels are:',num2str(labels_final(idx_outlier))))
+% numel(idx_outlier)
+% find(labels_final==46)
 %%
 [r,p]=corrcoef(medians_energy_vec,medians_micro_parameter_vec,'rows','complete');%0.37%p0.0029
 %try other kind of correlation
@@ -1017,7 +1130,7 @@ corr_coef_str=num2str(round(r(2),2));
 % medians_micro_parameter_vec(idx)=[];
 % SE_energy(idx)=[];
 % SE_micro_parameter(idx)=[];
-% 
+% % 
 % idx = find(isnan(medians_energy_vec))
 % medians_energy_vec(idx)=[];
 % medians_micro_parameter_vec(idx)=[];
@@ -1039,17 +1152,24 @@ y_fit=y_fit';
 y_fit_sorted = y_fit(index);
 
 %%
-medians_micro_parameter_vec(equal_labels_idx)=
+%medians_micro_parameter_vec(equal_labels_idx)=
 %%
 figure, 
 s = errorbar(medians_micro_parameter_vec, medians_energy_vec, SE_energy, SE_energy, SE_micro_parameter, SE_micro_parameter,'o');
+hold on
+plot(x_sorted,y_fit_sorted,'--','LineWidth',3,'Color',"#000000");
+% diff=setdiff(medians_micro_parameter_vec_ALLpves,medians_micro_parameter_vec_GMpves);
+% idx_diff=find(medians_micro_parameter_vec==diff(1));
 % hold on
-% plot(x_sorted,y_fit_sorted,'--','LineWidth',3,'Color',"#000000");
+% h = errorbar(medians_micro_parameter_vec(idx_diff), medians_energy_vec(idx_diff), SE_energy(idx_diff), SE_energy(idx_diff), SE_micro_parameter(idx_diff), SE_micro_parameter(idx_diff),'o');
 xlabel(strcat(micro_parameter,unit_of_measure),'FontSize',15,'FontWeight','bold');
 ylabel(dependent_parameter,'FontSize',15,'FontWeight','bold');
 s.LineWidth = 0.6;
+% h.LineWidth = 0.6;
 s.MarkerEdgeColor = 'b';
+% h.MarkerEdgeColor = 'r';
 s.MarkerFaceColor = [0 0.5 0.5];
+% h.MarkerFaceColor = [0 0.5 0.5];
 if p(2)<0.05 && p(2)>0.01    
     txt = {strcat('r = ',corr_coef_str,'*')};
 elseif p(2)<0.01 && p(2)>0.001   
@@ -1135,4 +1255,3 @@ grid on
 
 
 %% across subjs (GM median)
-
