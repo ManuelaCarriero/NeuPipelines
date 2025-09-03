@@ -290,6 +290,14 @@ medians_mse_subjs = zeros(n_subjs,n_regions);
 medians_mse_rsoma_subjs = zeros(n_subjs,n_regions);
 percentage_nans_rsoma_subjs = zeros(n_subjs,n_regions);%%%%
 
+V_pve_0_func_median_subjs = zeros(n_subjs,n_regions);
+V_pve_1_func_median_subjs = zeros(n_subjs,n_regions);
+V_pve_2_func_median_subjs = zeros(n_subjs,n_regions);
+
+V_pve_0_dwi_median_subjs = zeros(n_subjs,n_regions);
+V_pve_1_dwi_median_subjs = zeros(n_subjs,n_regions);
+V_pve_2_dwi_median_subjs = zeros(n_subjs,n_regions);
+
 start_time=tic;
 for subj = 1:n_subjs
     tic
@@ -345,46 +353,61 @@ for subj = 1:n_subjs
     percentage_removal_rsoma_subj = [];
     percentage_nans_rsoma_subj=[];%%%%
 
-    %FUNC SPACE
+    V_pve_0_func_median_subj = [];
+    V_pve_1_func_median_subj = [];
+    V_pve_2_func_median_subj = [];
+
+    V_pve_0_dwi_median_subj = [];
+    V_pve_1_dwi_median_subj = [];
+    V_pve_2_dwi_median_subj = [];
+
+    %%%%FUNC SPACE
+
+    V_pve_0_func_original = V_pve_0_func;
+    V_pve_1_func_original = V_pve_1_func;
+    V_pve_2_func_original = V_pve_2_func;
+
+    %define binary mask which is different for each subject
+    V_pve_1_func(V_pve_1_func>pve_1_threshold)=1;
+    V_pve_1_func(V_pve_1_func<1)=0;
+
+    %In case you want to mask by considering not all the WM
+    V_pve_2_func(V_pve_2_func<pve_2_threshold)=NaN;    
+    V_pve_2_func(V_pve_2_func>=pve_2_threshold)=0;
+    V_pve_2_func(isnan(V_pve_2_func))=1;
+
+    % %in case you want all the WM
+    % V_pve_2_func(V_pve_2_func==0)=NaN;
+    % V_pve_2_func(V_pve_2_func>0)=0;
+    % V_pve_2_func(isnan(V_pve_2_func))=1;
+
+    %In case you want to mask by considering not all the CSF
+    V_pve_0_func(V_pve_0_func<pve_0_threshold)=NaN;
+    V_pve_0_func(V_pve_0_func>=pve_0_threshold)=0;
+    V_pve_0_func(isnan(V_pve_0_func))=1;
+
+    % %in case you want all the CSF
+    % V_pve_0_func(V_pve_0_func==0)=NaN;
+    % V_pve_0_func(V_pve_0_func>0)=0;
+    % V_pve_0_func(isnan(V_pve_0_func))=1;
+
+    %loop over regions
     %list of regions (it can vary among subjs and among spaces)
     regions_func = unique(V_atlas_func(:));
     %background removal
     regions_func(1)=[];
     n_regions_func=numel(regions_func);
-    
-    V_atlas_mask_func=V_atlas_func;
-    %binarize atlas
+
+    V_atlas_mask_func=V_atlas_func; 
     for region = 1:n_regions_func
-    for ii = 1:length(V_atlas_func(:))
-        if V_atlas_func(ii) == regions_func(region)
-            V_atlas_mask_func(ii) = 1;
-        else
-            V_atlas_mask_func(ii) = 0;
+        %binarize atlas
+        for ii = 1:length(V_atlas_func(:))
+            if V_atlas_func(ii) == regions_func(region)
+                V_atlas_mask_func(ii) = 1;
+            else
+                V_atlas_mask_func(ii) = 0;
+            end
         end
-    end
-    %define mask
-    V_pve_1_func(V_pve_1_func>pve_1_threshold)=1;
-    V_pve_1_func(V_pve_1_func<1)=0;
-
-    % %In case you want to mask by considering not all the WM
-    % V_pve_2_func(V_pve_2_func<pve_2_threshold)=NaN;    
-    % V_pve_2_func(V_pve_2_func>=pve_2_threshold)=0;
-    % V_pve_2_func(isnan(V_pve_2_func))=1;
-
-    %in case you want all the WM
-    V_pve_2_func(V_pve_2_func==0)=NaN;
-    V_pve_2_func(V_pve_2_func>0)=0;
-    V_pve_2_func(isnan(V_pve_2_func))=1;
-
-    % %In case you want to mask by considering not all the WM
-    % V_pve_0_func(V_pve_0_func<pve_0_threshold)=NaN;
-    % V_pve_0_func(V_pve_0_func>=pve_0_threshold)=0;
-    % V_pve_0_func(isnan(V_pve_0_func))=1;
-
-    %in case you want all the CSF
-    V_pve_0_func(V_pve_0_func==0)=NaN;
-    V_pve_0_func(V_pve_0_func>0)=0;
-    V_pve_0_func(isnan(V_pve_0_func))=1;
 
     V_GM = V_pve_1_func.*V_pve_0_func.*V_pve_2_func;
     V_mask_func = V_GM.*V_atlas_mask_func;
@@ -438,6 +461,31 @@ for subj = 1:n_subjs
 
     labels_func_subj(end+1) = regions_func(region);
 
+    %calculate PVE regional medians 
+    V_pve_0_func_masked = V_pve_0_func_original.*V_mask_func;
+    %remove background
+    mask_func_zeros = find(V_pve_0_func_masked==0);
+    V_pve_0_func_masked(mask_func_zeros)=[];
+
+    V_pve_0_func_median = median(V_pve_0_func_masked(:)); 
+    V_pve_0_func_median_subj(end+1) = V_pve_0_func_median;
+
+    V_pve_1_func_masked = V_pve_1_func_original.*V_mask_func;
+    %remove background
+    mask_func_zeros = find(V_pve_1_func_masked==0);
+    V_pve_1_func_masked(mask_func_zeros)=[];
+
+    V_pve_1_func_median = median(V_pve_1_func_masked(:));
+    V_pve_1_func_median_subj(end+1) = V_pve_1_func_median;
+
+    V_pve_2_func_masked = V_pve_2_func_original.*V_mask_func;
+    %remove background
+    mask_func_zeros = find(V_pve_2_func_masked==0);
+    V_pve_2_func_masked(mask_func_zeros)=[];
+
+    V_pve_2_func_median = median(V_pve_2_func_masked(:)); 
+    V_pve_2_func_median_subj(end+1) = V_pve_2_func_median;
+
     end
         
     medians_CMRO2_subjs(subj,1:n_regions_func) = medians_CMRO2_subj;
@@ -448,11 +496,48 @@ for subj = 1:n_subjs
     percentage_nans_CMRO2_subjs(subj,1:n_regions_func) = percentage_nans_CMRO2_subj;
     percentage_nans_CBF_subjs(subj,1:n_regions_func) = percentage_nans_CBF_subj;
 
-    %DWI space
+    V_pve_0_func_median_subjs(subj,1:n_regions_func) = V_pve_0_func_median_subj;
+    V_pve_1_func_median_subjs(subj,1:n_regions_func) = V_pve_1_func_median_subj;
+    V_pve_2_func_median_subjs(subj,1:n_regions_func) = V_pve_2_func_median_subj;
+
+    %%%%DWI space
     regions_dwi = unique(V_atlas_dwi(:));
     %background removal
     regions_dwi(1)=[];
     n_regions_dwi=numel(regions_dwi);
+
+    V_pve_0_dwi_original = V_pve_0_dwi;
+    V_pve_1_dwi_original = V_pve_1_dwi;
+    V_pve_2_dwi_original = V_pve_2_dwi;
+
+    %define mask
+    V_fsoma_to_mask = V_fsoma;
+    V_fsoma_to_mask(V_fsoma_to_mask>fsoma_threshold)=1;
+    V_fsoma_to_mask(V_fsoma_to_mask<1)=0;
+
+    V_pve_1_dwi(V_pve_1_dwi>pve_1_threshold)=1;
+    V_pve_1_dwi(V_pve_1_dwi<1)=0;
+
+    %In case you want to mask by considering not all the WM
+    V_pve_2_dwi(V_pve_2_dwi<pve_2_threshold)=NaN;    
+    V_pve_2_dwi(V_pve_2_dwi>=pve_2_threshold)=0;
+    V_pve_2_dwi(isnan(V_pve_2_dwi))=1;
+
+    % %in case you want all the WM
+    % V_pve_2_dwi(V_pve_2_dwi==0)=NaN;
+    % V_pve_2_dwi(V_pve_2_dwi>0)=0;
+    % V_pve_2_dwi(isnan(V_pve_2_dwi))=1;
+
+    %In case you want to mask by considering not all the CSF
+    V_pve_0_dwi(V_pve_0_dwi<pve_0_threshold)=NaN;
+    V_pve_0_dwi(V_pve_0_dwi>=pve_0_threshold)=0;
+    V_pve_0_dwi(isnan(V_pve_0_dwi))=1;
+
+    % %in case you want all the CSF
+    % V_pve_0_dwi(V_pve_0_dwi==0)=NaN;
+    % V_pve_0_dwi(V_pve_0_dwi>0)=0;
+    % V_pve_0_dwi(isnan(V_pve_0_dwi))=1;
+
 
     V_atlas_mask_dwi=V_atlas_dwi;
     %binarize atlas
@@ -465,33 +550,7 @@ for subj = 1:n_subjs
         end
     end
 
-    %define mask
-    V_fsoma_to_mask = V_fsoma;
-    V_fsoma_to_mask(V_fsoma_to_mask>fsoma_threshold)=1;
-    V_fsoma_to_mask(V_fsoma_to_mask<1)=0;
 
-    V_pve_1_dwi(V_pve_1_dwi>pve_1_threshold)=1;
-    V_pve_1_dwi(V_pve_1_dwi<1)=0;
-
-    % %In case you want to mask by considering not all the WM
-    % V_pve_2_dwi(V_pve_2_dwi<pve_2_threshold)=NaN;    
-    % V_pve_2_dwi(V_pve_2_dwi>=pve_2_threshold)=0;
-    % V_pve_2_dwi(isnan(V_pve_2_dwi))=1;
-
-    %in case you want all the WM
-    V_pve_2_dwi(V_pve_2_dwi==0)=NaN;
-    V_pve_2_dwi(V_pve_2_dwi>0)=0;
-    V_pve_2_dwi(isnan(V_pve_2_dwi))=1;
-
-    % %In case you want to mask by considering not all the WM
-    % V_pve_0_dwi(V_pve_0_dwi<pve_0_threshold)=NaN;
-    % V_pve_0_dwi(V_pve_0_dwi>=pve_0_threshold)=0;
-    % V_pve_0_dwi(isnan(V_pve_0_dwi))=1;
-
-    %in case you want all the CSF
-    V_pve_0_dwi(V_pve_0_dwi==0)=NaN;
-    V_pve_0_dwi(V_pve_0_dwi>0)=0;
-    V_pve_0_dwi(isnan(V_pve_0_dwi))=1;
 
     V_GM = V_pve_1_dwi.*V_pve_2_dwi.*V_pve_0_dwi;
     V_mask_dwi = V_GM.*V_atlas_mask_dwi;
@@ -574,7 +633,32 @@ for subj = 1:n_subjs
     
     percentage_removal_microparameter_subj(end+1) = percentage_high_MSE_micropar;
     percentage_removal_rsoma_subj(end+1) = percentage_high_MSE_rsoma;%%%
-   
+
+    %calculate PVE regional medians %use V_mask_dwi_fs as we are interested
+    %in Rsoma
+    V_pve_0_dwi_masked = V_pve_0_dwi_original.*V_mask_dwi_fs;
+    %remove background
+    mask_dwi_zeros = find(V_pve_0_dwi_masked==0);
+    V_pve_0_dwi_masked(mask_dwi_zeros)=[];
+
+    V_pve_0_dwi_median = median(V_pve_0_dwi_masked(:)); 
+    V_pve_0_dwi_median_subj(end+1) = V_pve_0_dwi_median;
+
+    V_pve_1_dwi_masked = V_pve_1_dwi_original.*V_mask_dwi_fs;
+    %remove background
+    mask_dwi_zeros = find(V_pve_1_dwi_masked==0);
+    V_pve_1_dwi_masked(mask_dwi_zeros)=[];
+
+    V_pve_1_dwi_median = median(V_pve_1_dwi_masked(:));
+    V_pve_1_dwi_median_subj(end+1) = V_pve_1_dwi_median;
+
+    V_pve_2_dwi_masked = V_pve_2_dwi_original.*V_mask_dwi_fs;
+    %remove background
+    mask_dwi_zeros = find(V_pve_2_dwi_masked==0);
+    V_pve_2_dwi_masked(mask_dwi_zeros)=[];
+
+    V_pve_2_dwi_median = median(V_pve_2_dwi_masked(:)); 
+    V_pve_2_dwi_median_subj(end+1) = V_pve_2_dwi_median;
     end
     
     labels_dwi_subjs(subj,1:n_regions_dwi) = labels_dwi_subj;%
@@ -593,6 +677,11 @@ for subj = 1:n_subjs
     percentage_removal_microparameter_subjs(subj,1:n_regions_dwi) = percentage_removal_microparameter_subj;
     percentage_removal_rsoma_subjs(subj,1:n_regions_dwi) = percentage_removal_rsoma_subj;
     percentage_nans_rsoma_subjs(subj,1:n_regions_dwi)=percentage_nans_rsoma_subj;%%%%
+
+    V_pve_0_dwi_median_subjs(subj,1:n_regions_dwi) = V_pve_0_dwi_median_subj;
+    V_pve_1_dwi_median_subjs(subj,1:n_regions_dwi) = V_pve_1_dwi_median_subj;
+    V_pve_2_dwi_median_subjs(subj,1:n_regions_dwi) = V_pve_2_dwi_median_subj;
+
     toc
     disp(strcat('Finished subject', num2str(subj),'Starting subject', num2str(subj+1)))
 
@@ -675,6 +764,29 @@ for row = 1:length(labels_dwi_subjs(:,1))
     labels_dwi_subjs_final(row,:)=labels_dwi_subjs_row_final;
 end
 
+V_pve_0_dwi_median_subjs_final=[];
+for row = 1:length(V_pve_0_dwi_median_subjs(:,1))
+    V_pve_0_dwi_median_subjs_row=V_pve_0_dwi_median_subjs(row,:);
+    lst_idx = lst_idx_matrix_dwi(row,:);
+    V_pve_0_dwi_median_subjs_row_final=V_pve_0_dwi_median_subjs_row(lst_idx);
+    V_pve_0_dwi_median_subjs_final(row,:)=V_pve_0_dwi_median_subjs_row_final;
+end
+
+V_pve_1_dwi_median_subjs_final=[];
+for row = 1:length(V_pve_1_dwi_median_subjs(:,1))
+    V_pve_1_dwi_median_subjs_row=V_pve_1_dwi_median_subjs(row,:);
+    lst_idx = lst_idx_matrix_dwi(row,:);
+    V_pve_1_dwi_median_subjs_row_final=V_pve_1_dwi_median_subjs_row(lst_idx);
+    V_pve_1_dwi_median_subjs_final(row,:)=V_pve_1_dwi_median_subjs_row_final;
+end
+
+V_pve_2_dwi_median_subjs_final=[];
+for row = 1:length(V_pve_2_dwi_median_subjs(:,1))
+    V_pve_2_dwi_median_subjs_row=V_pve_2_dwi_median_subjs(row,:);
+    lst_idx = lst_idx_matrix_dwi(row,:);
+    V_pve_2_dwi_median_subjs_row_final=V_pve_2_dwi_median_subjs_row(lst_idx);
+    V_pve_2_dwi_median_subjs_final(row,:)=V_pve_2_dwi_median_subjs_row_final;
+end
 
 if strcmp(micro_parameter,'Rsoma')    
     medians_mse_rsoma_subjs_final=[];
@@ -757,6 +869,30 @@ for row = 1:length(labels_func_subjs(:,1))
     labels_func_subjs_final(row,:)=labels_func_subjs_row_final;
 end
 
+V_pve_0_func_median_subjs_final=[];
+for row = 1:length(V_pve_0_func_median_subjs(:,1))
+    V_pve_0_func_median_subjs_row=V_pve_0_func_median_subjs(row,:);
+    lst_idx = lst_idx_matrix_func(row,:);
+    V_pve_0_func_median_subjs_row_final=V_pve_0_func_median_subjs_row(lst_idx);
+    V_pve_0_func_median_subjs_final(row,:)=V_pve_0_func_median_subjs_row_final;
+end
+
+V_pve_1_func_median_subjs_final=[];
+for row = 1:length(V_pve_1_func_median_subjs(:,1))
+    V_pve_1_func_median_subjs_row=V_pve_1_func_median_subjs(row,:);
+    lst_idx = lst_idx_matrix_func(row,:);
+    V_pve_1_func_median_subjs_row_final=V_pve_1_func_median_subjs_row(lst_idx);
+    V_pve_1_func_median_subjs_final(row,:)=V_pve_1_func_median_subjs_row_final;
+end
+
+V_pve_2_func_median_subjs_final=[];
+for row = 1:length(V_pve_2_func_median_subjs(:,1))
+    V_pve_2_func_median_subjs_row=V_pve_2_func_median_subjs(row,:);
+    lst_idx = lst_idx_matrix_func(row,:);
+    V_pve_2_func_median_subjs_row_final=V_pve_2_func_median_subjs_row(lst_idx);
+    V_pve_2_func_median_subjs_final(row,:)=V_pve_2_func_median_subjs_row_final;
+end
+
 %percentage of zeros in the different regions of different subjects
 percentage_removal_func_subjs_final=[];
 for row = 1:length(percentage_removal_func_subjs(:,1))
@@ -834,6 +970,30 @@ for row = 1:length(labels_dwi_subjs_final(:,1))
     labels_dwi_subjs_final_spaces(row,:)=labels_dwi_subjs_row_final;
 end
 
+V_pve_0_dwi_median_subjs_final_spaces=[];
+for row = 1:length(V_pve_0_dwi_median_subjs_final(:,1))
+    V_pve_0_dwi_median_subjs_row=V_pve_0_dwi_median_subjs_final(row,:);
+    lst_idx = lst_idx_matrix_dwi_spaces(row,:);
+    V_pve_0_dwi_median_subjs_row_final=V_pve_0_dwi_median_subjs_row(lst_idx);
+    V_pve_0_dwi_median_subjs_final_spaces(row,:)=V_pve_0_dwi_median_subjs_row_final;
+end
+
+V_pve_1_dwi_median_subjs_final_spaces=[];
+for row = 1:length(V_pve_1_dwi_median_subjs_final(:,1))
+    V_pve_1_dwi_median_subjs_row=V_pve_1_dwi_median_subjs_final(row,:);
+    lst_idx = lst_idx_matrix_dwi_spaces(row,:);
+    V_pve_1_dwi_median_subjs_row_final=V_pve_1_dwi_median_subjs_row(lst_idx);
+    V_pve_1_dwi_median_subjs_final_spaces(row,:)=V_pve_1_dwi_median_subjs_row_final;
+end
+
+V_pve_2_dwi_median_subjs_final_spaces=[];
+for row = 1:length(V_pve_2_dwi_median_subjs_final(:,1))
+    V_pve_2_dwi_median_subjs_row=V_pve_2_dwi_median_subjs_final(row,:);
+    lst_idx = lst_idx_matrix_dwi_spaces(row,:);
+    V_pve_2_dwi_median_subjs_row_final=V_pve_2_dwi_median_subjs_row(lst_idx);
+    V_pve_2_dwi_median_subjs_final_spaces(row,:)=V_pve_2_dwi_median_subjs_row_final;
+end
+
 if strcmp(micro_parameter,'Rsoma')    
     medians_mse_rsoma_subjs_final_spaces=[];
     for row = 1:length(medians_mse_rsoma_subjs_final(:,1))
@@ -907,6 +1067,30 @@ for row = 1:length(labels_func_subjs_final(:,1))
     labels_func_subjs_final_spaces(row,:)=labels_func_subjs_row_final;
 end
 
+V_pve_0_func_median_subjs_final_spaces=[];
+for row = 1:length(V_pve_0_func_median_subjs_final(:,1))
+    V_pve_0_func_median_subjs_row=V_pve_0_func_median_subjs_final(row,:);
+    lst_idx = lst_idx_matrix_func_spaces(row,:);
+    V_pve_0_func_median_subjs_row_final=V_pve_0_func_median_subjs_row(lst_idx);
+    V_pve_0_func_median_subjs_final_spaces(row,:)=V_pve_0_func_median_subjs_row_final;
+end
+
+V_pve_1_func_median_subjs_final_spaces=[];
+for row = 1:length(V_pve_1_func_median_subjs_final(:,1))
+    V_pve_1_func_median_subjs_row=V_pve_1_func_median_subjs_final(row,:);
+    lst_idx = lst_idx_matrix_func_spaces(row,:);
+    V_pve_1_func_median_subjs_row_final=V_pve_1_func_median_subjs_row(lst_idx);
+    V_pve_1_func_median_subjs_final_spaces(row,:)=V_pve_1_func_median_subjs_row_final;
+end
+
+V_pve_2_func_median_subjs_final_spaces=[];
+for row = 1:length(V_pve_2_func_median_subjs_final(:,1))
+    V_pve_2_func_median_subjs_row=V_pve_2_func_median_subjs_final(row,:);
+    lst_idx = lst_idx_matrix_func_spaces(row,:);
+    V_pve_2_func_median_subjs_row_final=V_pve_2_func_median_subjs_row(lst_idx);
+    V_pve_2_func_median_subjs_final_spaces(row,:)=V_pve_2_func_median_subjs_row_final;
+end
+
 %percentage of zeros in the different regions of different subjects
 percentage_removal_func_subjs_final_spaces=[];
 for row = 1:length(percentage_removal_func_subjs_final(:,1))
@@ -957,9 +1141,27 @@ medians_func = medians_func_subjs_final_spaces;
 medians_dwi = medians_dwi_subjs_final_spaces;
 medians_mse = medians_mse_rsoma_subjs_final_spaces;
 
+medians_pve_0_func = V_pve_0_func_median_subjs_final_spaces;
+medians_pve_1_func = V_pve_1_func_median_subjs_final_spaces;
+medians_pve_2_func = V_pve_2_func_median_subjs_final_spaces;
+
+medians_pve_0_dwi = V_pve_0_dwi_median_subjs_final_spaces;
+medians_pve_1_dwi = V_pve_1_dwi_median_subjs_final_spaces;
+medians_pve_2_dwi = V_pve_2_dwi_median_subjs_final_spaces;
+
 medians_func(:,regions_idx)=[];
 medians_dwi(:,regions_idx)=[];
 medians_mse(:,regions_idx)=[];
+
+medians_pve_0_func(:,regions_idx)=[];
+medians_pve_1_func(:,regions_idx)=[];
+medians_pve_2_func(:,regions_idx)=[];
+
+medians_pve_0_dwi(:,regions_idx)=[];
+medians_pve_1_dwi(:,regions_idx)=[];
+medians_pve_2_dwi(:,regions_idx)=[];
+
+
 
 labels_final=labels_func_subjs_final_spaces(1,:);
 labels_final(regions_idx)=[];
@@ -1021,6 +1223,19 @@ SE_micro_parameter = nanstd(medians_dwi,0,1)/sqrt(n_subjs);
 medians_mse = nanmedian(medians_mse,1);
 
 cv_micro_parameter = SE_micro_parameter./medians_micro_parameter_vec;
+medians_pve_0_dwi_vec = nanmedian(medians_pve_0_dwi,1);
+SE_pve_0_dwi = nanstd(medians_pve_0_dwi_vec,0,1)/sqrt(n_subjs);
+medians_pve_1_dwi_vec = nanmedian(medians_pve_1_dwi,1);
+SE_pve_1_dwi = nanstd(medians_pve_1_dwi_vec,0,1)/sqrt(n_subjs);
+medians_pve_2_dwi_vec = nanmedian(medians_pve_2_dwi,1);
+SE_pve_2_dwi = nanstd(medians_pve_2_dwi_vec,0,1)/sqrt(n_subjs);
+
+medians_pve_0_func_vec = nanmedian(medians_pve_0_func,1);
+SE_pve_0_func = nanstd(medians_pve_0_func_vec,0,1)/sqrt(n_subjs);
+medians_pve_1_func_vec = nanmedian(medians_pve_1_func,1);
+SE_pve_1_func = nanstd(medians_pve_1_func_vec,0,1)/sqrt(n_subjs);
+medians_pve_2_func_vec = nanmedian(medians_pve_2_func,1);
+SE_pve_2_func = nanstd(medians_pve_2_func_vec,0,1)/sqrt(n_subjs);
 
 %%
 %compare std vs mse and cv vs mse
@@ -1107,7 +1322,7 @@ elseif strcmp(micro_parameter,'fneurite')
 end
 
 %% Run if you to remove outliers identified by eyes
-rsoma_limit=13.5;
+rsoma_limit=11.1;
 idx_outlier=find(medians_micro_parameter_vec<rsoma_limit);
 
 medians_energy_vec(idx_outlier)=[];
@@ -1115,6 +1330,21 @@ medians_micro_parameter_vec(idx_outlier)=[];
 SE_energy(idx_outlier)=[];
 SE_micro_parameter(idx_outlier)=[];
 
+medians_pve_0_dwi_vec(idx_outlier)=[];
+medians_pve_1_dwi_vec(idx_outlier)=[];
+medians_pve_2_dwi_vec(idx_outlier)=[];
+
+medians_pve_0_func_vec(idx_outlier)=[];
+medians_pve_1_func_vec(idx_outlier)=[];
+medians_pve_2_func_vec(idx_outlier)=[];
+
+SE_pve_0_func(idx_outlier)=[];
+SE_pve_1_func(idx_outlier)=[];
+SE_pve_2_func(idx_outlier)=[];
+
+SE_pve_0_dwi(idx_outlier)=[];
+SE_pve_1_dwi(idx_outlier)=[];
+SE_pve_2_dwi(idx_outlier)=[];
 % %find which are low rsoma regions
 % disp(strcat('Lower rsoma labels are:',num2str(labels_final(idx_outlier))))
 % numel(idx_outlier)
@@ -1124,23 +1354,56 @@ SE_micro_parameter(idx_outlier)=[];
 %try other kind of correlation
 corr_coef_str=num2str(round(r(2),2));
 
-% % remove nan microstructural regions
-% idx = find(isnan(medians_micro_parameter_vec))
-% medians_energy_vec(idx)=[];
-% medians_micro_parameter_vec(idx)=[];
-% SE_energy(idx)=[];
-% SE_micro_parameter(idx)=[];
-% % 
-% idx = find(isnan(medians_energy_vec))
-% medians_energy_vec(idx)=[];
-% medians_micro_parameter_vec(idx)=[];
-% SE_energy(idx)=[];
-% SE_micro_parameter(idx)=[];
+% remove nan microstructural regions
+idx = find(isnan(medians_micro_parameter_vec))
+medians_energy_vec(idx)=[];
+medians_micro_parameter_vec(idx)=[];
+SE_energy(idx)=[];
+SE_micro_parameter(idx)=[];
+
+medians_pve_0_dwi_vec(idx)=[];
+medians_pve_1_dwi_vec(idx)=[];
+medians_pve_2_dwi_vec(idx)=[];
+
+medians_pve_0_func_vec(idx)=[];
+medians_pve_1_func_vec(idx)=[];
+medians_pve_2_func_vec(idx)=[];
+
+SE_pve_0_func(idx)=[];
+SE_pve_1_func(idx)=[];
+SE_pve_2_func(idx)=[];
+
+SE_pve_0_dwi(idx)=[];
+SE_pve_1_dwi(idx)=[];
+SE_pve_2_dwi(idx)=[];
+
+% 
+idx = find(isnan(medians_energy_vec))
+medians_energy_vec(idx)=[];
+medians_micro_parameter_vec(idx)=[];
+SE_energy(idx)=[];
+SE_micro_parameter(idx)=[];
+
+medians_pve_0_dwi_vec(idx)=[];
+medians_pve_1_dwi_vec(idx)=[];
+medians_pve_2_dwi_vec(idx)=[];
+
+medians_pve_0_func_vec(idx)=[];
+medians_pve_1_func_vec(idx)=[];
+medians_pve_2_func_vec(idx)=[];
+
+SE_pve_0_func(idx)=[];
+SE_pve_1_func(idx)=[];
+SE_pve_2_func(idx)=[];
+
+SE_pve_0_dwi(idx)=[];
+SE_pve_1_dwi(idx)=[];
+SE_pve_2_dwi(idx)=[];
 
 y=medians_energy_vec;
 x=medians_micro_parameter_vec;
 % Fit a quadratic equation
-pol = polyfit(x, y, 1);
+pol = polyfit(x, y, 2);
 % Evaluate the fitted polynomial
 y_fit = polyval(pol, x);
 % Calculate the R-squared value
@@ -1156,8 +1419,8 @@ y_fit_sorted = y_fit(index);
 %%
 figure, 
 s = errorbar(medians_micro_parameter_vec, medians_energy_vec, SE_energy, SE_energy, SE_micro_parameter, SE_micro_parameter,'o');
-hold on
-plot(x_sorted,y_fit_sorted,'--','LineWidth',3,'Color',"#000000");
+% hold on
+% plot(x_sorted,y_fit_sorted,'--','LineWidth',3,'Color',"#000000");
 % diff=setdiff(medians_micro_parameter_vec_ALLpves,medians_micro_parameter_vec_GMpves);
 % idx_diff=find(medians_micro_parameter_vec==diff(1));
 % hold on
@@ -1170,37 +1433,37 @@ s.MarkerEdgeColor = 'b';
 % h.MarkerEdgeColor = 'r';
 s.MarkerFaceColor = [0 0.5 0.5];
 % h.MarkerFaceColor = [0 0.5 0.5];
-if p(2)<0.05 && p(2)>0.01    
-    txt = {strcat('r = ',corr_coef_str,'*')};
-elseif p(2)<0.01 && p(2)>0.001   
-    txt = {strcat('r = ',corr_coef_str,'**')};
-elseif p(2)<0.001
-    txt = {strcat('r = ',corr_coef_str,'***')};
-elseif p(2)>0.05
-        txt = {strcat('r = ',corr_coef_str,'')};
-end
-text(60,12,txt,'FontWeight', 'Bold');
-annotation('textbox',[.6,.2,.30,.13], 'String', txt, 'FontWeight', 'Bold','FontSize',15);
-if strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'Rsoma')
-    text(13.8,60,txt, 'FontWeight', 'bold','FontSize',12);
-elseif strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'fsoma')
-    text(0.39,60,txt, 'FontWeight', 'bold','FontSize',12);
-elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'Rsoma')
-    text(13.8,140,txt, 'FontWeight', 'bold','FontSize',12);
-elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'fsoma')
-    text(0.39,140,txt, 'FontWeight', 'bold','FontSize',12);
-elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'fc')
-    text(3*10^(13),140,txt, 'FontWeight', 'bold','FontSize',12);
-elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'fsup')
-    text(8*10^4,140,txt, 'FontWeight', 'bold','FontSize',12);
-elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'fneurite')
-    text(0.3,140,txt, 'FontWeight', 'bold','FontSize',12);
-elseif strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'fsup')
-    text(8*10^4,60,txt, 'FontWeight', 'bold','FontSize',12);
-elseif strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'fc')
-    text(3*10^13,60,txt, 'FontWeight', 'bold','FontSize',12);
-
-end
+% if p(2)<0.05 && p(2)>0.01    
+%     txt = {strcat('r = ',corr_coef_str,'*')};
+% elseif p(2)<0.01 && p(2)>0.001   
+%     txt = {strcat('r = ',corr_coef_str,'**')};
+% elseif p(2)<0.001
+%     txt = {strcat('r = ',corr_coef_str,'***')};
+% elseif p(2)>0.05
+%         txt = {strcat('r = ',corr_coef_str,'')};
+% end
+% text(60,12,txt,'FontWeight', 'Bold');
+% annotation('textbox',[.6,.2,.30,.13], 'String', txt, 'FontWeight', 'Bold','FontSize',15);
+% if strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'Rsoma')
+%     text(13.8,60,txt, 'FontWeight', 'bold','FontSize',12);
+% elseif strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'fsoma')
+%     text(0.39,60,txt, 'FontWeight', 'bold','FontSize',12);
+% elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'Rsoma')
+%     text(13.8,140,txt, 'FontWeight', 'bold','FontSize',12);
+% elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'fsoma')
+%     text(0.39,140,txt, 'FontWeight', 'bold','FontSize',12);
+% elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'fc')
+%     text(3*10^(13),140,txt, 'FontWeight', 'bold','FontSize',12);
+% elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'fsup')
+%     text(8*10^4,140,txt, 'FontWeight', 'bold','FontSize',12);
+% elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'fneurite')
+%     text(0.3,140,txt, 'FontWeight', 'bold','FontSize',12);
+% elseif strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'fsup')
+%     text(8*10^4,60,txt, 'FontWeight', 'bold','FontSize',12);
+% elseif strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'fc')
+%     text(3*10^13,60,txt, 'FontWeight', 'bold','FontSize',12);
+% 
+% end
 set(get(gca, 'XAxis'), 'FontWeight', 'bold');
 set(get(gca, 'YAxis'), 'FontWeight', 'bold');
 set(gca,'box','off')
@@ -1211,6 +1474,102 @@ height=450;
 set(gcf,'position',[x0,y0,width,height]);
 grid on
 
+%% check relationship between parameters and PVE medians
+
+%select parameters
+pve_tissue = 'GM';
+parameter = 'dwi';
+
+%select data
+if strcmp(parameter,'dwi')
+    medians_parameter = medians_micro_parameter_vec;
+    SE_parameter = SE_micro_parameter;
+    if strcmp(pve_tissue,'CSF')
+        medians_pve = medians_pve_0_dwi_vec;
+        SE_pve = SE_pve_0_dwi;
+    elseif strcmp(pve_tissue,'WM')
+        medians_pve = medians_pve_2_dwi_vec;
+        SE_pve = SE_pve_2_dwi;
+    elseif strcmp(pve_tissue,'GM')
+        medians_pve = medians_pve_1_dwi_vec;
+        SE_pve = SE_pve_1_dwi;
+    end
+elseif strcmp(parameter,'func')
+    medians_parameter = medians_energy_vec;
+    SE_parameter = SE_energy;
+    if strcmp(pve_tissue,'CSF')
+        medians_pve = medians_pve_0_func_vec;
+        SE_pve = SE_pve_0_func;
+    elseif strcmp(pve_tissue,'WM')
+        medians_pve = medians_pve_2_func_vec;
+        SE_pve = SE_pve_2_func;
+    elseif strcmp(pve_tissue,'GM')
+        medians_pve = medians_pve_1_func_vec;
+        SE_pve = SE_pve_1_func;
+        
+    end
+end
+
+
+
+[r,p]=corrcoef(medians_parameter,medians_pve,'rows','complete');
+%try other kind of correlation
+corr_coef_str=num2str(round(r(2),2));
+
+%plot (manually select y label)
+figure, 
+s = errorbar(medians_pve, medians_parameter, SE_parameter, SE_parameter, SE_pve, SE_pve,'o');
+% hold on
+% plot(x_sorted,y_fit_sorted,'--','LineWidth',3,'Color',"#000000");
+xlabel(strcat(pve_tissue,'pve'),'FontSize',15,'FontWeight','bold');
+ylabel(strcat(micro_parameter,unit_of_measure),'FontSize',15,'FontWeight','bold');
+s.LineWidth = 0.6;
+% h.LineWidth = 0.6;
+s.MarkerEdgeColor = 'b';
+% h.MarkerEdgeColor = 'r';
+s.MarkerFaceColor = [0 0.5 0.5];
+% if p(2)<0.05 && p(2)>0.01    
+%     txt = {strcat('r = ',corr_coef_str,'*')};
+% elseif p(2)<0.01 && p(2)>0.001   
+%     txt = {strcat('r = ',corr_coef_str,'**')};
+% elseif p(2)<0.001
+%     txt = {strcat('r = ',corr_coef_str,'***')};
+% elseif p(2)>0.05
+%         txt = {strcat('r = ',corr_coef_str,'')};
+% end
+% title('Regional medians')
+% text(60,12,txt,'FontWeight', 'Bold');
+% annotation('textbox',[.6,.2,.30,.13], 'String', txt, 'FontWeight', 'Bold','FontSize',15);
+% if strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'Rsoma')
+%     text(13.8,60,txt, 'FontWeight', 'bold','FontSize',12);
+% elseif strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'fsoma')
+%     text(0.39,60,txt, 'FontWeight', 'bold','FontSize',12);
+% elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'Rsoma')
+%     text(13.8,140,txt, 'FontWeight', 'bold','FontSize',12);
+% elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'fsoma')
+%     text(0.39,140,txt, 'FontWeight', 'bold','FontSize',12);
+% elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'fc')
+%     text(3*10^(13),140,txt, 'FontWeight', 'bold','FontSize',12);
+% elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'fsup')
+%     text(8*10^4,140,txt, 'FontWeight', 'bold','FontSize',12);
+% elseif strcmp(energy_parameter,'CMRO2') && strcmp(micro_parameter,'fneurite')
+%     text(0.3,140,txt, 'FontWeight', 'bold','FontSize',12);
+% elseif strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'fsup')
+%     text(8*10^4,60,txt, 'FontWeight', 'bold','FontSize',12);
+% elseif strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'fc')
+%     text(3*10^13,60,txt, 'FontWeight', 'bold','FontSize',12);
+% 
+% end
+set(get(gca, 'XAxis'), 'FontWeight', 'bold');
+set(get(gca, 'YAxis'), 'FontWeight', 'bold');
+set(gca,'box','off')
+%where the plot will be displayed
+x0=400;
+y0=400;
+width=550;
+height=450;
+set(gcf,'position',[x0,y0,width,height]);
+grid on
 %% across regions (for each subject)
 
 corr_for_each_subj = [];
