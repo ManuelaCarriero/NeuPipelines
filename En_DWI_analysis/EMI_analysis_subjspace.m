@@ -144,10 +144,14 @@ end
 
 %% select binary masks thresholds
 pve_1_threshold=0.5;
-pve_0_threshold=0.4;%threshold beyond which the CSF is set to 0
-pve_2_threshold=0.4;%
+
 fsoma_threshold=0.15;
 
+%change these thresholds values between 0.1 and 1
+pve_0_threshold_func=0.9;%threshold beyond which the CSF is set to 0
+pve_2_threshold_func=0.9;
+pve_0_threshold_dwi=0.9;%
+pve_2_threshold_dwi=0.9;%
 %% number of cells density map (many subjects) 
 
 V_fc_maps={};
@@ -372,8 +376,8 @@ for subj = 1:n_subjs
     V_pve_1_func(V_pve_1_func<1)=0;
 
     %In case you want to mask by considering not all the WM
-    V_pve_2_func(V_pve_2_func<pve_2_threshold)=NaN;    
-    V_pve_2_func(V_pve_2_func>=pve_2_threshold)=0;
+    V_pve_2_func(V_pve_2_func<pve_2_threshold_func)=NaN;    
+    V_pve_2_func(V_pve_2_func>=pve_2_threshold_func)=0;
     V_pve_2_func(isnan(V_pve_2_func))=1;
 
     % %in case you want all the WM
@@ -382,8 +386,8 @@ for subj = 1:n_subjs
     % V_pve_2_func(isnan(V_pve_2_func))=1;
 
     %In case you want to mask by considering not all the CSF
-    V_pve_0_func(V_pve_0_func<pve_0_threshold)=NaN;
-    V_pve_0_func(V_pve_0_func>=pve_0_threshold)=0;
+    V_pve_0_func(V_pve_0_func<pve_0_threshold_func)=NaN;
+    V_pve_0_func(V_pve_0_func>=pve_0_threshold_func)=0;
     V_pve_0_func(isnan(V_pve_0_func))=1;
 
     % %in case you want all the CSF
@@ -519,18 +523,18 @@ for subj = 1:n_subjs
     V_pve_1_dwi(V_pve_1_dwi<1)=0;
 
     %In case you want to mask by considering not all the WM
-    V_pve_2_dwi(V_pve_2_dwi<pve_2_threshold)=NaN;    
-    V_pve_2_dwi(V_pve_2_dwi>=pve_2_threshold)=0;
+    V_pve_2_dwi(V_pve_2_dwi<pve_2_threshold_dwi)=NaN;    
+    V_pve_2_dwi(V_pve_2_dwi>=pve_2_threshold_dwi)=0;
     V_pve_2_dwi(isnan(V_pve_2_dwi))=1;
-
+     
     % %in case you want all the WM
     % V_pve_2_dwi(V_pve_2_dwi==0)=NaN;
     % V_pve_2_dwi(V_pve_2_dwi>0)=0;
     % V_pve_2_dwi(isnan(V_pve_2_dwi))=1;
 
     %In case you want to mask by considering not all the CSF
-    V_pve_0_dwi(V_pve_0_dwi<pve_0_threshold)=NaN;
-    V_pve_0_dwi(V_pve_0_dwi>=pve_0_threshold)=0;
+    V_pve_0_dwi(V_pve_0_dwi<pve_0_threshold_dwi)=NaN;
+    V_pve_0_dwi(V_pve_0_dwi>=pve_0_threshold_dwi)=0;
     V_pve_0_dwi(isnan(V_pve_0_dwi))=1;
 
     % %in case you want all the CSF
@@ -1109,6 +1113,9 @@ for row = 1:length(percentage_nans_func_subjs_final(:,1))
     percentage_nans_func_subjs_final_spaces(row,:)=percentage_nans_func_subjs_row_final;
 end
 
+%% informal testing
+%isequal(labels_func_subjs_final_spaces,labels_dwi_subjs_final_spaces)
+
 %% Remove regions based on the number of NaNs
 
 % %Check number of nan values vs subjects for each region
@@ -1237,6 +1244,25 @@ SE_pve_1_func = nanstd(medians_pve_1_func_vec,0,1)/sqrt(n_subjs);
 medians_pve_2_func_vec = nanmedian(medians_pve_2_func,1);
 SE_pve_2_func = nanstd(medians_pve_2_func_vec,0,1)/sqrt(n_subjs);
 
+%% save matrices for threshold value analysis
+if pve_0_threshold_dwi==0.6
+    medians_energy_vec_thr06=medians_energy_vec;
+    medians_micro_parameter_vec_thr06=medians_micro_parameter_vec;
+    labels_final_thr06=labels_final;
+elseif pve_0_threshold_dwi==0.7
+    medians_energy_vec_thr07=medians_energy_vec;
+    medians_micro_parameter_vec_thr07=medians_micro_parameter_vec;
+    labels_final_thr07=labels_final;
+elseif pve_0_threshold_dwi==0.8
+    medians_energy_vec_thr08=medians_energy_vec;
+    medians_micro_parameter_vec_thr08=medians_micro_parameter_vec;
+    labels_final_thr08=labels_final;
+elseif pve_0_threshold_dwi==0.9
+    medians_energy_vec_thr09=medians_energy_vec;
+    medians_micro_parameter_vec_thr09=medians_micro_parameter_vec;
+    labels_final_thr09=labels_final;
+end
+
 %%
 %compare std vs mse and cv vs mse
 
@@ -1310,20 +1336,30 @@ SE_micro_parameter(idx_cv)=[];
 %%
 
 if strcmp(micro_parameter,'Rsoma')
-    unit_of_measure='(\mum)';
+    unit_of_measure_dwi='(\mum)';
 elseif strcmp(micro_parameter,'fsoma')
-    unit_of_measure='';
+    unit_of_measure_dwi='';
 elseif strcmp(micro_parameter,'fsup')
-    unit_of_measure='(m^{-1})';
+    unit_of_measure_dwi='(m^{-1})';
 elseif strcmp(micro_parameter,'fc')
-    unit_of_measure='(m^{-3})';
+    unit_of_measure_dwi='(m^{-3})';
 elseif strcmp(micro_parameter,'fneurite')
-    unit_of_measure='';
+    unit_of_measure_dwi='';
+end
+
+if strcmp(energy_parameter,'CMRO2')
+    energy_parameter_label='CMRO_2';
+    unit_of_measure_energy='(\mumol/100g/min)';
+else
+    energy_parameter_label='CBF';
+    unit_of_measure_energy='(ml/100g/min)';
 end
 
 %% Run if you to remove outliers identified by eyes
 rsoma_limit=11.1;
 idx_outlier=find(medians_micro_parameter_vec<rsoma_limit);
+% energy_limit=240;
+% idx_outlier=find(medians_energy_vec>energy_limit);
 
 medians_energy_vec(idx_outlier)=[];
 medians_micro_parameter_vec(idx_outlier)=[];
@@ -1414,25 +1450,29 @@ Rsquared
 y_fit=y_fit';
 y_fit_sorted = y_fit(index);
 
+x=x';
+y=y';
+tbl=table(x,y,'VariableNames',{'Rsoma','CMRO2'});
+fitlm(tbl,'CMRO2~Rsoma^2','RobustOpts','on')
 %%
 %medians_micro_parameter_vec(equal_labels_idx)=
 %%
 figure, 
 s = errorbar(medians_micro_parameter_vec, medians_energy_vec, SE_energy, SE_energy, SE_micro_parameter, SE_micro_parameter,'o');
-% hold on
-% plot(x_sorted,y_fit_sorted,'--','LineWidth',3,'Color',"#000000");
+hold on
+plot(x_sorted,y_fit_sorted,'--','LineWidth',3,'Color',"#000000");
 % diff=setdiff(medians_micro_parameter_vec_ALLpves,medians_micro_parameter_vec_GMpves);
 % idx_diff=find(medians_micro_parameter_vec==diff(1));
 % hold on
 % h = errorbar(medians_micro_parameter_vec(idx_diff), medians_energy_vec(idx_diff), SE_energy(idx_diff), SE_energy(idx_diff), SE_micro_parameter(idx_diff), SE_micro_parameter(idx_diff),'o');
-xlabel(strcat(micro_parameter,unit_of_measure),'FontSize',15,'FontWeight','bold');
-ylabel(dependent_parameter,'FontSize',15,'FontWeight','bold');
+xlabel(strcat(micro_parameter,unit_of_measure_dwi),'FontSize',15,'FontWeight','bold');
+ylabel(strcat(energy_parameter_label,unit_of_measure_energy),'FontSize',15,'FontWeight','bold');
 s.LineWidth = 0.6;
 % h.LineWidth = 0.6;
 s.MarkerEdgeColor = 'b';
 % h.MarkerEdgeColor = 'r';
 s.MarkerFaceColor = [0 0.5 0.5];
-% h.MarkerFaceColor = [0 0.5 0.5];
+%h.MarkerFaceColor = [0 0.5 0.5];
 % if p(2)<0.05 && p(2)>0.01    
 %     txt = {strcat('r = ',corr_coef_str,'*')};
 % elseif p(2)<0.01 && p(2)>0.001   
@@ -1477,8 +1517,8 @@ grid on
 %% check relationship between parameters and PVE medians
 
 %select parameters
-pve_tissue = 'GM';
-parameter = 'dwi';
+pve_tissue = 'CSF';
+parameter = 'func';
 
 %select data
 if strcmp(parameter,'dwi')
@@ -1522,24 +1562,28 @@ s = errorbar(medians_pve, medians_parameter, SE_parameter, SE_parameter, SE_pve,
 % hold on
 % plot(x_sorted,y_fit_sorted,'--','LineWidth',3,'Color',"#000000");
 xlabel(strcat(pve_tissue,'pve'),'FontSize',15,'FontWeight','bold');
-ylabel(strcat(micro_parameter,unit_of_measure),'FontSize',15,'FontWeight','bold');
+if strcmp(parameter,'dwi')
+    ylabel(strcat(micro_parameter,unit_of_measure_dwi),'FontSize',15,'FontWeight','bold');
+else
+    ylabel(strcat(energy_parameter_label,unit_of_measure_energy),'FontSize',15,'FontWeight','bold');
+end
 s.LineWidth = 0.6;
 % h.LineWidth = 0.6;
 s.MarkerEdgeColor = 'b';
 % h.MarkerEdgeColor = 'r';
 s.MarkerFaceColor = [0 0.5 0.5];
-% if p(2)<0.05 && p(2)>0.01    
-%     txt = {strcat('r = ',corr_coef_str,'*')};
-% elseif p(2)<0.01 && p(2)>0.001   
-%     txt = {strcat('r = ',corr_coef_str,'**')};
-% elseif p(2)<0.001
-%     txt = {strcat('r = ',corr_coef_str,'***')};
-% elseif p(2)>0.05
-%         txt = {strcat('r = ',corr_coef_str,'')};
-% end
-% title('Regional medians')
-% text(60,12,txt,'FontWeight', 'Bold');
-% annotation('textbox',[.6,.2,.30,.13], 'String', txt, 'FontWeight', 'Bold','FontSize',15);
+if p(2)<0.05 && p(2)>0.01    
+    txt = {strcat('r = ',corr_coef_str,'*')};
+elseif p(2)<0.01 && p(2)>0.001   
+    txt = {strcat('r = ',corr_coef_str,'**')};
+elseif p(2)<0.001
+    txt = {strcat('r = ',corr_coef_str,'***')};
+elseif p(2)>0.05
+        txt = {strcat('r = ',corr_coef_str,'')};
+end
+title('Regional medians')
+text(60,12,txt,'FontWeight', 'Bold');
+annotation('textbox',[.6,.2,.30,.13], 'String', txt, 'FontWeight', 'Bold','FontSize',15);
 % if strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'Rsoma')
 %     text(13.8,60,txt, 'FontWeight', 'bold','FontSize',12);
 % elseif strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'fsoma')
@@ -1570,6 +1614,200 @@ width=550;
 height=450;
 set(gcf,'position',[x0,y0,width,height]);
 grid on
+
+%%
+%to use this, you should remove NaNs to everyone
+% medians_dwi_scored = zscore(medians_micro_parameter_vec);
+% medians_pve_0_dwi_scored = zscore(medians_pve_0_dwi_vec);
+% medians_pve_2_dwi_scored = zscore(medians_pve_2_dwi_vec);
+% medians_energy_dwi_scored = zscore(medians_energy_vec);
+
+medians_dwi_scored = nanzscore(medians_micro_parameter_vec);
+medians_pve_0_dwi_scored = nanzscore(medians_pve_0_dwi_vec);
+medians_pve_2_dwi_scored = nanzscore(medians_pve_2_dwi_vec);
+medians_energy_scored = nanzscore(medians_energy_vec);
+medians_pve_0_func_scored = nanzscore(medians_pve_0_func_vec);
+medians_pve_2_func_scored = nanzscore(medians_pve_2_func_vec);
+%medians_mse_scored = nanzscore(medians_mse);
+
+medians_dwi_scored_tr = medians_dwi_scored';
+medians_pve_0_dwi_scored_tr = medians_pve_0_dwi_scored';
+medians_pve_2_dwi_scored_tr = medians_pve_2_dwi_scored';
+medians_energy_scored_tr = medians_energy_scored';
+medians_pve_0_func_scored_tr = medians_pve_0_func_scored';
+medians_pve_2_func_scored_tr = medians_pve_2_func_scored';
+%medians_mse_scored_tr = medians_mse_scored';
+
+% %consider both dwi and func PVE medians as covariates
+% %CMRO2 can be influenced by: pve in its space (as we saw)
+% %Rsoma and, since in turn Rsoma can be influenced by pve in dwi space,
+% %CMRO2 can be influenced by the pve values in dwi space as well.
+% X=cat(1,medians_dwi_scored, medians_pve_0_dwi_scored, medians_pve_2_dwi_scored,medians_pve_0_func_scored,medians_pve_2_func_scored);
+% y = medians_energy_scored;
+% X=X';
+% y=y';
+% fitlm(X,y,'RobustOpts','on')
+
+tbl=table(medians_energy_scored_tr,medians_dwi_scored_tr,medians_pve_0_dwi_scored_tr,medians_pve_2_dwi_scored_tr,medians_pve_0_func_scored_tr,medians_pve_2_func_scored_tr, 'VariableNames', ...
+    {'CMRO2','Rsoma','pve_0_dwi','pve_2_dwi','pve_0_func','pve_2_func'});
+%build your model
+% mdl=fitlm(tbl,'CMRO2 ~ Rsoma^2+pve_0_dwi+pve_2_dwi+pve_0_func+pve_2_func','RobustOpts','on')
+mdl=fitlm(tbl,'CMRO2 ~ Rsoma^2','RobustOpts','off')
+% mdl=fitlm(tbl,'CMRO2 ~ Rsoma^2','RobustOpts','off')
+%%I didn't remove NaN values but it shouldn't influence
+%figure, plot(mdl)
+%%
+
+%consider both dwi PVE medians as covariates
+X=cat(1,medians_dwi_scored, medians_pve_0_dwi_scored, medians_pve_2_dwi_scored);
+y = medians_energy_scored;
+X=X';
+y=y';
+fitlm(X,y)
+
+%consider both func PVE medians as covariates
+X=cat(1,medians_dwi_scored, medians_pve_0_func_scored, medians_pve_2_func_scored);
+y = medians_energy_scored;
+X=X';
+y=y';
+fitlm(X,y)
+
+
+
+%How are pve medians in dwi and func spaces related ?
+
+figure, 
+s=scatter(medians_pve_2_dwi_vec,medians_pve_2_func_vec,40);
+s.MarkerFaceColor = 'b';
+s.MarkerEdgeColor = 'b';
+title('Median WM PVE values');
+xlabel('PVE dwi space','FontWeight','bold');
+ylabel('PVE func space','FontWeight','bold');
+grid on
+
+idx_nans = find(isnan(medians_pve_0_dwi_vec));
+
+medians_pve_0_dwi_vec_nonans = medians_pve_0_dwi_vec;
+medians_pve_0_func_vec_nonans = medians_pve_0_func_vec;
+
+medians_pve_0_dwi_vec_nonans(idx_nans)=[];
+medians_pve_0_func_vec_nonans(idx_nans)=[];
+
+idx_nans = find(isnan(medians_pve_0_func_vec_nonans));
+
+medians_pve_0_dwi_vec_nonans(idx_nans)=[];
+medians_pve_0_func_vec_nonans(idx_nans)=[];
+
+[r,p]=corrcoef(medians_pve_0_dwi_vec_nonans,medians_pve_0_func_vec_nonans);
+
+%% check parameter diff trend
+
+%check if labels have equal order
+comparisons=[];
+for i = 1:length(labels_final_thr01)
+    elements=[labels_final_thr01(i),labels_final_thr02(i),labels_final_thr03(i),labels_final_thr05(i),labels_final_onlyGM(i),labels_final_thr06(i),labels_final_thr07(i),labels_final_thr08(i),labels_final_thr09(i)];
+    m = repmat(labels_final_thr01(i),1,length(elements));
+    comparison = isequal(m, elements);
+    comparisons(end+1)=comparison;
+end
+%check
+sum(comparisons)==length(comparisons)
+
+%detect uncommon label which is present in threshold=0.4
+%and delete it
+uncommon_label=setdiff(labels_final_thr04,labels_final_thr05);
+
+idx_uncommon_label=find(labels_final_thr04==uncommon_label);
+
+labels_final_thr04_withoutuncommon=labels_final_thr04;
+medians_energy_vec_thr04_withoutuncommon=medians_energy_vec_thr04;
+medians_micro_parameter_vec_thr04_withoutuncommon = medians_micro_parameter_vec_thr04;
+
+labels_final_thr04_withoutuncommon(idx_uncommon_label)=[];
+medians_energy_vec_thr04_withoutuncommon(idx_uncommon_label)=[];
+medians_micro_parameter_vec_thr04_withoutuncommon(idx_uncommon_label)=[];
+
+%%
+%now you can calculate the mean of differences
+% diff05 = medians_micro_parameter_vec_thr05-medians_micro_parameter_vec_onlyGM;
+% mean_diff05 = abs(nanmean(diff05));
+medians_micros={medians_micro_parameter_vec_thr0,medians_micro_parameter_vec_thr01,medians_micro_parameter_vec_thr02,medians_micro_parameter_vec_thr03,medians_micro_parameter_vec_thr04_withoutuncommon,medians_micro_parameter_vec_thr05,medians_micro_parameter_vec_thr06,medians_micro_parameter_vec_thr07,medians_micro_parameter_vec_thr08,medians_micro_parameter_vec_thr09};
+mean_diffs_micros=[];
+for i=1:length(medians_micros)
+diff=medians_micros{i}-medians_micro_parameter_vec_onlyGM;
+mean_diff = nanmean(abs(diff));
+mean_diffs_micros(end+1)=mean_diff;
+end
+
+figure, plot(0:0.1:0.9,mean_diffs_micros,'-o')
+ylabel('mean(abs(diff))');
+xlabel('threshold value');
+title('Mean of absolute values of differences (Rsoma)');
+
+medians_energy={medians_energy_vec_thr0,medians_energy_vec_thr01,medians_energy_vec_thr02,medians_energy_vec_thr03,medians_energy_vec_thr04_withoutuncommon,medians_energy_vec_thr05,medians_energy_vec_thr06,medians_energy_vec_thr07,medians_energy_vec_thr08,medians_energy_vec_thr09};
+mean_diffs_energy=[];
+for i=1:length(medians_energy)
+diff=medians_energy{i}-medians_energy_vec_onlyGM;
+mean_diff = nanmean(abs(diff));
+mean_diffs_energy(end+1)=mean_diff;
+end
+
+figure, plot(0:0.1:0.9,mean_diffs_energy,'-o')
+ylabel('mean(abs(diff))');
+xlabel('threshold value');
+title('Mean of absolute values of differences (CMRO_2)');
+
+%% check significance of test using bootstrapping
+original_samples = cat(1,medians_micro_parameter_vec,medians_energy_vec);
+original_samples = original_samples';
+
+counter_coeffs_linear=[];
+counter_coeffs_squared=[];
+
+tot_iterations = 100000;
+
+rng(10)
+for j = 1:tot_iterations
+    extracted_samples=[];
+    
+    for i = 1:length(medians_energy_vec)
+        %generate N randm numbers with repetition
+        indices=randi(length(medians_energy_vec),1,length(medians_energy_vec));
+        extracted_sample=original_samples(indices(i),:);
+        extracted_samples(i,:)=extracted_sample;
+    end
+
+    tbl = table(nanzscore(extracted_samples(:,1)),nanzscore(extracted_samples(:,2)),'VariableNames',{'Rsoma','CMRO2'});
+    mdl=fitlm(tbl,'CMRO2 ~ Rsoma^2','RobustOpts','off');
+    matrix_mdl = table2array(mdl.Coefficients);
+
+    linear_coeff = matrix_mdl(2,1);
+    squared_coeff = matrix_mdl(3,1);
+
+    if linear_coeff<0
+        counter_coeffs_linear(end+1)=-1;
+    elseif linear_coeff==0
+        counter_coeffs_linear(end+1)=0;
+    elseif linear_coeff>0
+        counter_coeffs_linear(end+1)=1;
+    end
+
+    if squared_coeff<0
+        counter_coeffs_squared(end+1)=-1;
+    elseif squared_coeff==0
+        counter_coeffs_squared(end+1)=0;
+    elseif squared_coeff>0
+        counter_coeffs_squared(end+1)=1;
+    end
+
+end
+
+pvalue_squaredcoeff=numel(find(counter_coeffs_squared<0))/tot_iterations;
+pvalue_linearcoeff=numel(find(counter_coeffs_linear<0))/tot_iterations;
+
+tbl=table(nanzscore(medians_energy_vec'),nanzscore(medians_micro_parameter_vec'),'VariableNames',{'CMRO2','Rsoma'});
+total_mdl = fitlm(tbl,'CMRO2~Rsoma^2','RobustOpts','off');
+
 %% across regions (for each subject)
 
 corr_for_each_subj = [];
