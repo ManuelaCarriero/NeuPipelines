@@ -1,28 +1,89 @@
+%% select which type of masking apply
+rois = 'not complete'; %without any kind of masking, otherwise choose 'complete'  
+masking = 'GM'; %masking only by GM, otherwise choose 'all'
+mse_threshold = 'yes';
+mse_threshold_value=85;
+
+%pve_1 = GM,
+%pve_0 = CSF,
+%pve_2 = WM.
+%% select binary masks thresholds
+pve_1_threshold=0.5;
+
+fsoma_threshold=0.15;
+%%
+%change these thresholds values between 0.1 and 1
+pve_0_threshold_func=1;%threshold before which the CSF is set to 0
+pve_2_threshold_func=1;
+pve_0_threshold_dwi=0.3;%
+pve_2_threshold_dwi=1;%
+
+%% set rsoma limit for fc and fsup calculation
+rsoma_upper_limit=7; %7 micrometer is good for WAND data.%11.1 for Chieti
+
 %% load data
 % load subjs idx
-run='run-01';
-subjects = importdata(strcat('/media/nas_rete/Vitality/code/subjs_DWI.txt'));
+%run='run-01';
+subjects = importdata(strcat('/home/c25078236/Desktop/WAND_data/subjects.txt'));
+subjects(subjects==42565)=[];%subj that does not have mprage
+subjects(subjects==19230)=[];%subj that does not have b0
+subjects(subjects==20609)=[];%subj that does not have M0
+subjects(subjects==69881)=[];%subj that does not have SANDI MAPS
 n_subjs=length(subjects);
 start_subj=1;
 %%
 %load pve on subj space
-V_pves_dwi={};
-V_pves_func={};
+V_pves_0_dwi={};
+V_pves_1_dwi={};
+V_pves_2_dwi={};
+V_pves_0_func={};
+V_pves_1_func={};
+V_pves_2_func={};
 
 for i = start_subj:n_subjs
     
-    subj = subjects{i};
+    subj = subjects(i);
+    subj=num2str(subj);
+    if numel(subj)==4
+        subj=strcat('0',subj);
+    else
+        subj=subj;
+    end
 
-    img_path_pve_dwi=strcat('/media/nas_rete/Vitality/maps2SUBJSPACE/dwi/pve_on_b0/',subj,'_',run,'_PVE_1_on_b0.nii.gz');
-    img_path_pve_func=strcat('/media/nas_rete/Vitality/maps2SUBJSPACE/func/pve_on_M0/',subj,'_',run,'_PVE_1_on_M0.nii.gz');
+    % img_path_pve_dwi=strcat('/media/nas_rete/Vitality/maps2SUBJSPACE/dwi/pve_on_b0/',subj,'_',run,'_PVE_1_on_b0.nii.gz');
+    % img_path_pve_func=strcat('/media/nas_rete/Vitality/maps2SUBJSPACE/func/pve_on_M0/',subj,'_',run,'_PVE_1_on_M0.nii.gz');
+    img_path_pve_0_dwi=strcat('/home/c25078236/Desktop/WAND_data/ANAT/pve_coregistered/pve_on_b0/sub-',subj,'_pve0_on_b0.nii.gz');
+    img_path_pve_0_func=strcat('/home/c25078236/Desktop/WAND_data/ANAT/pve_coregistered/pve_on_M0/sub-',subj,'_pve0_on_M0.nii.gz');
 
-    V_vol_pve_dwi = spm_vol(img_path_pve_dwi);
+    img_path_pve_1_dwi=strcat('/home/c25078236/Desktop/WAND_data/ANAT/pve_coregistered/pve_on_b0/sub-',subj,'_pve1_on_b0.nii.gz');
+    img_path_pve_1_func=strcat('/home/c25078236/Desktop/WAND_data/ANAT/pve_coregistered/pve_on_M0/sub-',subj,'_pve1_on_M0.nii.gz');
+ 
+    img_path_pve_2_dwi=strcat('/home/c25078236/Desktop/WAND_data/ANAT/pve_coregistered/pve_on_b0/sub-',subj,'_pve2_on_b0.nii.gz');
+    img_path_pve_2_func=strcat('/home/c25078236/Desktop/WAND_data/ANAT/pve_coregistered/pve_on_M0/sub-',subj,'_pve2_on_M0.nii.gz');
+
+    V_vol_pve_dwi = spm_vol(img_path_pve_0_dwi);
     V_pve_dwi=spm_read_vols(V_vol_pve_dwi);
-    V_pves_dwi{end+1}=V_pve_dwi;
+    V_pves_0_dwi{end+1}=V_pve_dwi;
 
-    V_vol_pve_func = spm_vol(img_path_pve_func);
+    V_vol_pve_dwi = spm_vol(img_path_pve_1_dwi);
+    V_pve_dwi=spm_read_vols(V_vol_pve_dwi);
+    V_pves_1_dwi{end+1}=V_pve_dwi;
+
+    V_vol_pve_dwi = spm_vol(img_path_pve_2_dwi);
+    V_pve_dwi=spm_read_vols(V_vol_pve_dwi);
+    V_pves_2_dwi{end+1}=V_pve_dwi;
+    
+    V_vol_pve_func = spm_vol(img_path_pve_0_func);
     V_pve_func=spm_read_vols(V_vol_pve_func);
-    V_pves_func{end+1}=V_pve_func;
+    V_pves_0_func{end+1}=V_pve_func;
+
+    V_vol_pve_func = spm_vol(img_path_pve_1_func);
+    V_pve_func=spm_read_vols(V_vol_pve_func);
+    V_pves_1_func{end+1}=V_pve_func;
+
+    V_vol_pve_func = spm_vol(img_path_pve_2_func);
+    V_pve_func=spm_read_vols(V_vol_pve_func);
+    V_pves_2_func{end+1}=V_pve_func;
 
 end
 
@@ -51,10 +112,20 @@ V_atlases_func={};
 
 for i = start_subj:n_subjs
     
-    subj = subjects{i};
     
-    img_path_atlas_dwi=strcat('/media/nas_rete/Vitality/maps2SUBJSPACE/dwi/atlas_on_b0/AAL3v1_2mm_on_',subj,'_',run,'_acq-dwi_B0_brain_corr.nii.gz');
-    img_path_atlas_func=strcat('/media/nas_rete/Vitality/maps2SUBJSPACE/func/atlas_on_M0/AAL3v1_2mm_on_',subj,'_task-bh_',run,'_acq-dexi_M0.nii.gz');
+    subj = subjects(i);
+    subj=num2str(subj);
+    if numel(subj)==4
+        subj=strcat('0',subj);
+    else
+        subj=subj;
+    end
+
+    
+    % img_path_atlas_dwi=strcat('/media/nas_rete/Vitality/maps2SUBJSPACE/dwi/atlas_on_b0/AAL3v1_2mm_on_',subj,'_',run,'_acq-dwi_B0_brain_corr.nii.gz');
+    % img_path_atlas_func=strcat('/media/nas_rete/Vitality/maps2SUBJSPACE/func/atlas_on_M0/AAL3v1_2mm_on_',subj,'_task-bh_',run,'_acq-dexi_M0.nii.gz');
+    img_path_atlas_dwi=strcat('/home/c25078236/Desktop/WAND_data/ANAT/atlas_coregistered/atlas_on_b0/sub-',subj,'_AAL3v1_1mm_on_b0.nii.gz');
+    img_path_atlas_func=strcat('/home/c25078236/Desktop/WAND_data/ANAT/atlas_coregistered/atlas_on_M0/sub-',subj,'_AAL3v1_1mm_on_M0.nii.gz');
 
     V_vol_atlas_dwi = spm_vol(img_path_atlas_dwi);
     V_atlas_dwi=spm_read_vols(V_vol_atlas_dwi);
@@ -67,8 +138,8 @@ for i = start_subj:n_subjs
 end
 
 %% load parametric maps
-% V_CMRO2_maps={};
-% V_CBF_maps={};
+V_CMRO2_maps={};
+%V_CBF_maps={};
 
 V_rsoma_maps={};
 V_fsoma_maps={};
@@ -81,7 +152,15 @@ V_mse_maps={};
 
 for i = start_subj:n_subjs
     
-    subj = subjects{i};
+        
+    subj = subjects(i);
+    subj=num2str(subj);
+    if numel(subj)==4
+        subj=strcat('0',subj);
+    else
+        subj=subj;
+    end
+
     
 %     img_path_CMRO2=strcat('/media/nas_rete/Vitality/derivatives/',subj,'/perf/outcome/',subj,'_task-bh_',run,'_acq-dexi_volreg_asl_topup_CMRO2_map.nii.gz');
 %     img_path_CBF=strcat('/media/nas_rete/Vitality/derivatives/',subj,'/perf/outcome/',subj,'_task-bh_',run,'_acq-dexi_volreg_asl_topup_CBF_map.nii.gz');
@@ -93,17 +172,31 @@ for i = start_subj:n_subjs
 %     img_path_Din=strcat('/media/nas_rete/Vitality/derivatives/',subj,'/dwi/SANDI_Output/',subj,'_',run,'_SANDI-fit_Din.nii.gz');
 %     img_path_fextra=strcat('/media/nas_rete/Vitality/derivatives/',subj,'/dwi/SANDI_Output/',subj,'_',run,'_SANDI-fit_fextra.nii.gz');
 %     img_path_mse=strcat('/media/nas_rete/Vitality/derivatives/',subj,'/dwi/SANDI_Output/',subj,'_',run,'_SANDI-fit_mse.nii.gz');
-    img_path_rsoma=strcat('/media/nas_rete/Work_manuela/Vitality_data_SANDInewrelease/',subj,'/SANDI_output/',subj,'_',run,'_SANDI-fit_Rsoma.nii.gz');
-    img_path_fsoma=strcat('/media/nas_rete/Work_manuela/Vitality_data_SANDInewrelease/',subj,'/SANDI_output/',subj,'_',run,'_SANDI-fit_fsoma.nii.gz');
-    img_path_fneurite=strcat('/media/nas_rete/Work_manuela/Vitality_data_SANDInewrelease/',subj,'/SANDI_output/',subj,'_',run,'_SANDI-fit_fneurite.nii.gz');
-    img_path_De=strcat('/media/nas_rete/Work_manuela/Vitality_data_SANDInewrelease/',subj,'/SANDI_output/',subj,'_',run,'_SANDI-fit_De.nii.gz');
-    img_path_Din=strcat('/media/nas_rete/Work_manuela/Vitality_data_SANDInewrelease/',subj,'/SANDI_output/',subj,'_',run,'_SANDI-fit_Din.nii.gz');
-    img_path_fextra=strcat('/media/nas_rete/Work_manuela/Vitality_data_SANDInewrelease/',subj,'/SANDI_output/',subj,'_',run,'_SANDI-fit_fextra.nii.gz');
-    img_path_mse=strcat('/media/nas_rete/Work_manuela/Vitality_data_SANDInewrelease/',subj,'/SANDI_output/',subj,'_',run,'_SANDI-fit_mse.nii.gz');
-
-%     V_vol_CMRO2 = spm_vol(img_path_CMRO2);
-%     V_CMRO2=spm_read_vols(V_vol_CMRO2);
-%     V_CMRO2_maps{end+1}=V_CMRO2;
+    % 
+    % img_path_CMRO2=strcat('/media/nas_rete/Vitality/derivatives/',subj,'/perf/outcome/',subj,'_task-bh_',run,'_acq-dexi_volreg_asl_topup_CMRO2_map.nii.gz');
+    % 
+    % img_path_rsoma=strcat('/media/nas_rete/Work_manuela/Vitality_data_SANDInewrelease/',subj,'/SANDI_output/',subj,'_',run,'_SANDI-fit_Rsoma.nii.gz');
+    % img_path_fsoma=strcat('/media/nas_rete/Work_manuela/Vitality_data_SANDInewrelease/',subj,'/SANDI_output/',subj,'_',run,'_SANDI-fit_fsoma.nii.gz');
+    % img_path_fneurite=strcat('/media/nas_rete/Work_manuela/Vitality_data_SANDInewrelease/',subj,'/SANDI_output/',subj,'_',run,'_SANDI-fit_fneurite.nii.gz');
+    % img_path_De=strcat('/media/nas_rete/Work_manuela/Vitality_data_SANDInewrelease/',subj,'/SANDI_output/',subj,'_',run,'_SANDI-fit_De.nii.gz');
+    % img_path_Din=strcat('/media/nas_rete/Work_manuela/Vitality_data_SANDInewrelease/',subj,'/SANDI_output/',subj,'_',run,'_SANDI-fit_Din.nii.gz');
+    % img_path_fextra=strcat('/media/nas_rete/Work_manuela/Vitality_data_SANDInewrelease/',subj,'/SANDI_output/',subj,'_',run,'_SANDI-fit_fextra.nii.gz');
+    % img_path_mse=strcat('/media/nas_rete/Work_manuela/Vitality_data_SANDInewrelease/',subj,'/SANDI_output/',subj,'_',run,'_SANDI-fit_mse.nii.gz');
+    img_path_CMRO2=strcat('/home/c25078236/Desktop/WAND_data/FUNC/CMRO2/sub-',subj,'_cmro2_est.nii.gz');
+    % 
+    img_path_rsoma=strcat('/home/c25078236/Desktop/WAND_data/DWI/SANDI_MAPS/sub-',subj,'/SANDI_Output/SANDI-fit_Rsoma.nii.gz');
+    img_path_fsoma=strcat('/home/c25078236/Desktop/WAND_data/DWI/SANDI_MAPS/sub-',subj,'/SANDI_Output/SANDI-fit_fsoma.nii.gz');
+    img_path_fneurite=strcat('/home/c25078236/Desktop/WAND_data/DWI/SANDI_MAPS/sub-',subj,'/SANDI_Output/SANDI-fit_fneurite.nii.gz');
+    img_path_De=strcat('/home/c25078236/Desktop/WAND_data/DWI/SANDI_MAPS/sub-',subj,'/SANDI_Output/SANDI-fit_De.nii.gz');
+    img_path_Din=strcat('/home/c25078236/Desktop/WAND_data/DWI/SANDI_MAPS/sub-',subj,'/SANDI_Output/SANDI-fit_Din.nii.gz');
+    img_path_fextra=strcat('/home/c25078236/Desktop/WAND_data/DWI/SANDI_MAPS/sub-',subj,'/SANDI_Output/SANDI-fit_fextra.nii.gz');
+    %img_path_mse=strcat('/media/nas_rete/Work_manuela/Vitality_data_SANDInewrelease/',subj,'/SANDI_output/',subj,'_',run,'_SANDI-fit_mse.nii.gz');
+    if strcmp(mse_threshold,'yes')
+        img_path_mse=strcat('/home/c25078236/Desktop/WAND_data/DWI/SANDI_MAPS/sub-',subj,'/SANDI_Output/sub-',subj,'_SANDI-fit_mse.nii.gz');
+    end
+    V_vol_CMRO2 = spm_vol(img_path_CMRO2);
+    V_CMRO2=spm_read_vols(V_vol_CMRO2);
+    V_CMRO2_maps{end+1}=V_CMRO2;
 % 
 %     V_vol_CBF = spm_vol(img_path_CBF);
 %     V_CBF=spm_read_vols(V_vol_CBF);
@@ -133,47 +226,77 @@ for i = start_subj:n_subjs
     V_fextra=spm_read_vols(V_vol_fextra);
     V_fextra_maps{end+1}=V_fextra;
 
-    V_vol_mse = spm_vol(img_path_mse);
-    V_mse=spm_read_vols(V_vol_mse);
-    V_mse_first = V_mse(:,:,:,1);
-    V_mse_maps{end+1}=V_mse_first;
-
+    if strcmp(mse_threshold,'yes')
+        V_vol_mse = spm_vol(img_path_mse);
+        V_mse=spm_read_vols(V_vol_mse);
+        V_mse_first = V_mse(:,:,:,1);
+        V_mse_maps{end+1}=V_mse_first;
+    end
 end
 
 
 
-%% select binary masks thresholds
-pve_1_threshold=0.5;
 
-fsoma_threshold=0.15;
-
-%change these thresholds values between 0.1 and 1
-pve_0_threshold_func=0.9;%threshold beyond which the CSF is set to 0
-pve_2_threshold_func=0.9;
-pve_0_threshold_dwi=0.9;%
-pve_2_threshold_dwi=0.9;%
 %% number of cells density map (many subjects) 
 
 V_fc_maps={};
 
 for i = 1:n_subjs    
+
     V_rsoma = V_rsoma_maps{i};
     V_fsoma = V_fsoma_maps{i};
-    V_pve = V_pves_dwi{i};
-    
-    for i = 1:length(V_rsoma_maps(:))
-        if V_rsoma(i) < 4
+
+    V_pve_0_dwi = V_pves_0_dwi{i};
+    V_pve_1_dwi = V_pves_1_dwi{i};
+    V_pve_2_dwi = V_pves_2_dwi{i};
+
+%if wand data, don't remove rsomas (only for plotting)
+    for i = 1:length(V_rsoma(:))%V_rsoma_maps(:)
+        if V_rsoma(i) < rsoma_upper_limit 
             V_rsoma(i)=0;
         end
     end
     
-    V_pve(V_pve>pve_threshold)=1;
-    V_pve(V_pve<1)=0;
+    V_pve_1_dwi(V_pve_1_dwi>pve_1_threshold)=1;
+    V_pve_1_dwi(V_pve_1_dwi<1)=0;
+
     V_fsoma_to_mask=V_fsoma;
     V_fsoma_to_mask(V_fsoma_to_mask>fsoma_threshold)=1;
     V_fsoma_to_mask(V_fsoma_to_mask<1)=0;
-    V_rsoma_masked = V_rsoma.*V_fsoma_to_mask.*V_pve;
-    
+
+    % %in case you want all the WM
+    % V_pve_2_dwi(V_pve_2_dwi==0)=NaN;
+    % V_pve_2_dwi(V_pve_2_dwi>0)=0;
+    % V_pve_2_dwi(isnan(V_pve_2_dwi))=1;
+
+    %In case you want to mask by considering not all the WM
+    V_pve_2_dwi(V_pve_2_dwi<pve_2_threshold_dwi)=NaN;
+    V_pve_2_dwi(V_pve_2_dwi>=pve_2_threshold_dwi)=0;
+    V_pve_2_dwi(isnan(V_pve_2_dwi))=1;
+
+    % %in case you want all the CSF
+    % V_pve_0_dwi(V_pve_0_dwi==0)=NaN;
+    % V_pve_0_dwi(V_pve_0_dwi>0)=0;
+    % V_pve_0_dwi(isnan(V_pve_0_dwi))=1;
+
+    %In case you want to mask by considering not all the CSF
+    V_pve_0_dwi(V_pve_0_dwi<pve_0_threshold_dwi)=NaN;
+    V_pve_0_dwi(V_pve_0_dwi>=pve_0_threshold_dwi)=0;
+    V_pve_0_dwi(isnan(V_pve_0_dwi))=1;
+
+    %MASKING
+    if strcmp(masking,'GM')
+         V_GM = V_pve_1_dwi;
+    elseif strcmp(masking,'all')
+        V_GM = V_pve_1_dwi.*V_pve_0_dwi.*V_pve_2_dwi;
+    end
+
+    if strcmp(rois,'complete')
+        V_rsoma_masked = V_rsoma.*V_fsoma_to_mask;
+    else
+        V_rsoma_masked = V_rsoma.*V_fsoma_to_mask.*V_GM; 
+    end 
+
     %convert to m^3
     V_rsoma_masked = V_rsoma_masked.*10^-6;
     
@@ -182,9 +305,7 @@ for i = 1:n_subjs
     %figure, imagesc(fc_map(:,:,45));
     for i = 1:length(fc_map(:))
         if fc_map(i)==Inf
-            fc_map(i)=NaN;%VALUTA SE METTERE A 0.
-    %     elseif isnan(fc_map(i))
-    %         fc_map(i)=0;
+            fc_map(i)=NaN;
         end
     end
 
@@ -193,33 +314,72 @@ for i = 1:n_subjs
 end
 
 % %find a method to remove too much high values at the borders.
-% fc_1=V_fc_maps{1}*10^(-9);
-% figure, imagesc(rot90(fc_1(:,:,40)))
-% title('Numerical soma density')
-% clim([0,100000])
+fc_1=V_fc_maps{1};
+figure, imagesc(rot90(fc_1(:,:,40)))
+title('Numerical soma density')
+% clim([10^12,10^14])
 
-%For the remaining unresonable values, you could try MSE threshold.
+%a further method to remove hyperintensities: look at the MSE.
+
 %% superficial density (many subjects)
 
 V_fsup_maps={};
 
 for i = 1:n_subjs    
+
     V_rsoma = V_rsoma_maps{i};
     V_fsoma = V_fsoma_maps{i};
-    V_pve = V_pves_dwi{i};
-    
-    for i = 1:length(V_rsoma_maps(:))
-        if V_rsoma(i) < 4
+
+    V_pve_0_dwi = V_pves_0_dwi{i};
+    V_pve_1_dwi = V_pves_1_dwi{i};
+    V_pve_2_dwi = V_pves_2_dwi{i};
+
+%if wand data, don't remove rsomas    
+    for i = 1:length(V_rsoma(:))
+        if V_rsoma(i) < rsoma_upper_limit
             V_rsoma(i)=0;
         end
     end
     
-    V_pve(V_pve>pve_threshold)=1;
-    V_pve(V_pve<1)=0;
+    V_pve_1_dwi(V_pve_1_dwi>pve_1_threshold)=1;
+    V_pve_1_dwi(V_pve_1_dwi<1)=0;
+
     V_fsoma_to_mask=V_fsoma;
     V_fsoma_to_mask(V_fsoma_to_mask>fsoma_threshold)=1;
     V_fsoma_to_mask(V_fsoma_to_mask<1)=0;
-    V_rsoma_masked = V_rsoma.*V_fsoma_to_mask.*V_pve;
+
+    % %in case you want all the WM
+    % V_pve_2_dwi(V_pve_2_dwi==0)=NaN;
+    % V_pve_2_dwi(V_pve_2_dwi>0)=0;
+    % V_pve_2_dwi(isnan(V_pve_2_dwi))=1;
+
+    %In case you want to mask by considering not all the WM
+    V_pve_2_dwi(V_pve_2_dwi<pve_2_threshold_dwi)=NaN;
+    V_pve_2_dwi(V_pve_2_dwi>=pve_2_threshold_dwi)=0;
+    V_pve_2_dwi(isnan(V_pve_2_dwi))=1;
+
+    % %in case you want all the CSF
+    % V_pve_0_dwi(V_pve_0_dwi==0)=NaN;
+    % V_pve_0_dwi(V_pve_0_dwi>0)=0;
+    % V_pve_0_dwi(isnan(V_pve_0_dwi))=1;
+
+    %In case you want to mask by considering not all the CSF
+    V_pve_0_dwi(V_pve_0_dwi<pve_0_threshold_dwi)=NaN;
+    V_pve_0_dwi(V_pve_0_dwi>=pve_0_threshold_dwi)=0;
+    V_pve_0_dwi(isnan(V_pve_0_dwi))=1;
+
+    %MASKING
+    if strcmp(masking,'GM')
+        V_GM = V_pve_1_dwi;
+    elseif strcmp(masking,'all')
+        V_GM = V_pve_1_dwi.*V_pve_0_dwi.*V_pve_2_dwi;
+    end
+
+    if strcmp(rois,'complete')
+        V_rsoma_masked = V_rsoma.*V_fsoma_to_mask;
+    else
+        V_rsoma_masked = V_rsoma.*V_fsoma_to_mask.*V_GM; 
+    end
 
     %convert to m^3
     V_rsoma_masked = V_rsoma_masked.*10^-6;    
@@ -227,12 +387,9 @@ for i = 1:n_subjs
     %voxel wise divide fs map over 4/3pir^3
     fsup_map = V_fsoma./V_rsoma_masked;
     fsup_map = 3*fsup_map;
-    %figure, imagesc(fc_map(:,:,45));
     for i = 1:length(fsup_map(:))
         if fsup_map(i)==Inf
-            fsup_map(i)=NaN;%VALUTA SE METTERE A 0.
-    %     elseif isnan(fc_map(i))
-    %         fc_map(i)=0;
+            fsup_map(i)=NaN;
         end
     end
 
@@ -240,16 +397,18 @@ for i = 1:n_subjs
 
 end
 
-V_fsup_one=V_fsup_maps{1}.*10^(-6);
+V_fsup_one=V_fsup_maps{1};%.*10^(-6);
 figure, imagesc(rot90(V_fsup_one(:,:,40)));
 title('Superficial Soma Density map')
+
 % % V_fsup_one_array=V_fsup_one(:);
 % % figure, hist(V_fsup_one_array);
 % % title('Superficial Soma Density Distribution');
 % % grid on
 
 %%  Count total number of regions
-img_path_atlas='/storage/shared/Atlas/AAL3v1_2mm_resampled.nii.gz';
+% img_path_atlas='/storage/shared/Atlas/AAL3v1_2mm_resampled.nii.gz';
+img_path_atlas='/home/c25078236/Desktop/WAND_data/AAL3/AAL3v1_1mm.nii.gz';
 Vhdr = spm_vol(img_path_atlas);
 V_atlas_tot = spm_read_vols(Vhdr);
 
@@ -259,20 +418,23 @@ regions(1)=[];
 n_regions=numel(regions);
 
 %% in case you don't have the original atlas
-n_regions=165;
+n_regions=166;%it is needed to built the empty matrix (you need to know the maximum length. If it's higher, it isn't a problem).
 
-%% compute medians
+%% compute medians 
 %prepare empty matrices with maximum size 
-%so to not have problems of different sizze
+%so to not have problems of different size
 %then take the common regions (intersection): 
 %1. first keep the common regions across subjects;
 %2. then keep the common regions across spaces (func and dwi)
 
+%you can loose some labels (?) when warping in subject space
+%so for each space and for each subject I checked which labels we have
 labels_func_subjs = zeros(n_subjs,n_regions);
-medians_CMRO2_subjs = zeros(n_subjs,n_regions);
-medians_CBF_subjs = zeros(n_subjs,n_regions);
-
 labels_dwi_subjs = zeros(n_subjs,n_regions);
+
+medians_CMRO2_subjs = zeros(n_subjs,n_regions);
+% medians_CBF_subjs = zeros(n_subjs,n_regions);
+
 medians_rsoma_subjs = zeros(n_subjs,n_regions);
 medians_fsoma_subjs = zeros(n_subjs,n_regions);
 medians_fc_subjs = zeros(n_subjs,n_regions);
@@ -283,30 +445,36 @@ medians_fextra_subjs = zeros(n_subjs,n_regions);
 medians_Din_subjs = zeros(n_subjs,n_regions);
 medians_De_subjs = zeros(n_subjs,n_regions);
 
-percentage_removal_CMRO2_subjs = zeros(n_subjs,n_regions);
-percentage_removal_CBF_subjs = zeros(n_subjs,n_regions); 
+percentage_zeros_CMRO2_subjs = zeros(n_subjs,n_regions);
+%percentage_unphysical_CBF_subjs = zeros(n_subjs,n_regions); 
 percentage_nans_CMRO2_subjs = zeros(n_subjs,n_regions);
-percentage_nans_CBF_subjs = zeros(n_subjs,n_regions); 
-percentage_removal_microparameter_subjs = zeros(n_subjs,n_regions); 
-percentage_removal_rsoma_subjs = zeros(n_subjs,n_regions);
+%percentage_nans_CBF_subjs = zeros(n_subjs,n_regions); 
+percentage_high_MSE_microparameter_subjs = zeros(n_subjs,n_regions); 
+percentage_high_MSE_rsoma_subjs = zeros(n_subjs,n_regions);
 
-medians_mse_subjs = zeros(n_subjs,n_regions);
-medians_mse_rsoma_subjs = zeros(n_subjs,n_regions);
-percentage_nans_rsoma_subjs = zeros(n_subjs,n_regions);%%%%
 
-V_pve_0_func_median_subjs = zeros(n_subjs,n_regions);
-V_pve_1_func_median_subjs = zeros(n_subjs,n_regions);
-V_pve_2_func_median_subjs = zeros(n_subjs,n_regions);
+medians_mse_subjs = zeros(n_subjs,n_regions); %MSE
+medians_mse_rsoma_subjs = zeros(n_subjs,n_regions); %MSE
 
-V_pve_0_dwi_median_subjs = zeros(n_subjs,n_regions);
-V_pve_1_dwi_median_subjs = zeros(n_subjs,n_regions);
-V_pve_2_dwi_median_subjs = zeros(n_subjs,n_regions);
+percentage_nans_rsoma_subjs = zeros(n_subjs,n_regions);
+
+V_pve_0_func_mean_subjs = zeros(n_subjs,n_regions);
+V_pve_1_func_mean_subjs = zeros(n_subjs,n_regions);
+V_pve_2_func_mean_subjs = zeros(n_subjs,n_regions);
+
+V_pve_0_dwi_mean_subjs = zeros(n_subjs,n_regions);
+V_pve_1_dwi_mean_subjs = zeros(n_subjs,n_regions);
+V_pve_2_dwi_mean_subjs = zeros(n_subjs,n_regions);
+
+V_pve_0_dwi_fs_mean_subjs = zeros(n_subjs,n_regions);
+V_pve_1_dwi_fs_mean_subjs = zeros(n_subjs,n_regions);
+V_pve_2_dwi_fs_mean_subjs = zeros(n_subjs,n_regions);
 
 start_time=tic;
 for subj = 1:n_subjs
     tic
     %load atlases
-    V_atlas_func = V_atlases_func{subj};
+    V_atlas_func = V_atlases_func{subj}; 
     V_atlas_dwi = V_atlases_dwi{subj};
 
     %load pve maps
@@ -319,7 +487,7 @@ for subj = 1:n_subjs
 
     %load parametric maps
     V_CMRO2 = V_CMRO2_maps{subj};
-    V_CBF = V_CBF_maps{subj};
+    % V_CBF = V_CBF_maps{subj};
 
     V_rsoma = V_rsoma_maps{subj};
     V_fsoma = V_fsoma_maps{subj};
@@ -330,43 +498,52 @@ for subj = 1:n_subjs
     V_Din = V_Din_maps{subj};
     V_De = V_De_maps{subj};
     V_fextra = V_fextra_maps{subj};
-    V_MSE = V_mse_maps{subj};
 
-    %where to save medians
+
+    %where to save parametric medians and PVE means
     medians_CMRO2_subj = [];
     medians_CBF_subj = [];
     medians_rsoma_subj = [];
     medians_fsoma_subj = [];
     medians_fc_subj = [];
     medians_fsup_subj = [];
-    medians_mse_subj = [];%
-    medians_mse_rsoma_subj = [];%
-
 
     medians_fneurite_subj = [];
     medians_Din_subj = [];
     medians_De_subj = [];
     medians_fextra_subj = [];
+
     labels_func_subj = [];
     labels_dwi_subj = [];
-    percentage_removal_CBF_subj = [];
-    percentage_removal_CMRO2_subj = [];
-    percentage_nans_CBF_subj = [];
-    percentage_nans_CMRO2_subj = [];
-    percentage_removal_microparameter_subj = [];
-    percentage_removal_rsoma_subj = [];
-    percentage_nans_rsoma_subj=[];%%%%
 
-    V_pve_0_func_median_subj = [];
-    V_pve_1_func_median_subj = [];
-    V_pve_2_func_median_subj = [];
+    %percentage_unphysical_CBF_subj = [];
+    percentage_zeros_CMRO2_subj = []; 
+    %percentage_nans_CBF_subj = [];
+    percentage_nans_CMRO2_subj = []; 
 
-    V_pve_0_dwi_median_subj = [];
-    V_pve_1_dwi_median_subj = [];
-    V_pve_2_dwi_median_subj = [];
+    percentage_nans_rsoma_subj=[]; 
+
+    V_pve_0_func_mean_subj = [];
+    V_pve_1_func_mean_subj = [];
+    V_pve_2_func_mean_subj = [];
+
+    V_pve_0_dwi_mean_subj = [];
+    V_pve_1_dwi_mean_subj = [];
+    V_pve_2_dwi_mean_subj = [];
+
+    V_pve_0_dwi_fs_mean_subj = []; 
+    V_pve_1_dwi_fs_mean_subj = [];
+    V_pve_2_dwi_fs_mean_subj = [];
+
+    if strcmp(mse_threshold,'yes')
+        V_MSE = V_mse_maps{subj}; %MSE
+        medians_mse_subj = []; %MSE
+        medians_mse_rsoma_subj = []; %MSE
+        percentage_high_MSE_microparameter_subj = []; %MSE
+        percentage_high_MSE_rsoma_subj = []; %MSE
+    end
 
     %%%%FUNC SPACE
-
     V_pve_0_func_original = V_pve_0_func;
     V_pve_1_func_original = V_pve_1_func;
     V_pve_2_func_original = V_pve_2_func;
@@ -413,96 +590,112 @@ for subj = 1:n_subjs
             end
         end
 
-    V_GM = V_pve_1_func.*V_pve_0_func.*V_pve_2_func;
-    V_mask_func = V_GM.*V_atlas_mask_func;
+    if strcmp(masking,'GM')
+        V_GM = V_pve_1_func;
+    elseif strcmp(masking,'all')
+        V_GM = V_pve_1_func.*V_pve_0_func.*V_pve_2_func;
+    end
+
+    if strcmp(rois,'complete')
+        V_mask_func = V_atlas_mask_func;
+    else
+        V_mask_func = V_atlas_mask_func.*V_GM;
+    end
+    
 
     %mask
 
     V_CMRO2_masked = V_CMRO2.*V_mask_func;
-    V_CBF_masked = V_CBF.*V_mask_func;
+    % V_CBF_masked = V_CBF.*V_mask_func;
     
     %remove background
     mask_func_zeros = find(V_mask_func==0);
     V_CMRO2_masked(mask_func_zeros)=[];
-    V_CBF_masked(mask_func_zeros)=[];
+    % V_CBF_masked(mask_func_zeros)=[];
 
-    %remove zeros inside the regions %CHECK IF CMRO2 AND CBF AND NAN AND
-    %NOT ZEROS OR THEY COULD HAVE BOTH TYPES OF UNPHYSICAL VALUES.
-    CMRO2_zeros = find(V_CMRO2_masked<=0);    
+    %%%%%%%%%count how many zeros and NaN inside the regions 
+    %count number of zeros in CMRO2 region
+    CMRO2_zeros = find(V_CMRO2_masked==0);    
     %count how many voxels we remove
     n_CMRO2_region_voxels_tot = numel(V_CMRO2_masked);
     n_CMRO2_zeros = numel(CMRO2_zeros);
-    percentage_removal_CMRO2 = n_CMRO2_zeros/n_CMRO2_region_voxels_tot;
-    percentage_removal_CMRO2_subj(end+1)=percentage_removal_CMRO2;%
+    percentage_zeros_CMRO2 = n_CMRO2_zeros/n_CMRO2_region_voxels_tot;
+    percentage_zeros_CMRO2_subj(end+1)=percentage_zeros_CMRO2;
 
 %     %remove CMRO2 zeros
 %     V_CMRO2_masked(CMRO2_zeros)=[];
 
+    %count number of nans in CMRO2 region
     CMRO2_nans=find(isnan(V_CMRO2_masked));
     n_CMRO2_nans=length(CMRO2_nans);
     percentage_nans_CMRO2=n_CMRO2_nans/n_CMRO2_region_voxels_tot;
     percentage_nans_CMRO2_subj(end+1)=percentage_nans_CMRO2;
 
-    %remove zeros inside the regions
-    CBF_zeros = find(V_CBF_masked<=0);    
-    %count how many voxels we remove
-    n_CBF_region_voxels_tot = numel(V_CBF_masked);
-    n_CBF_zeros = numel(CBF_zeros);
-    percentage_removal_CBF = n_CBF_zeros/n_CBF_region_voxels_tot*100;
-    percentage_removal_CBF_subj(end+1)=percentage_removal_CBF;   
+%     %count number of values lower or equal to zero in CBF region
+%     CBF_unphysical = find(V_CBF_masked<=0);    
+%     %count how many voxels we remove
+%     n_CBF_region_voxels_tot = numel(V_CBF_masked);
+%     n_CBF_unphysical = numel(CBF_unphysical);
+%     percentage_unphysical_CBF = n_CBF_unphysical/n_CBF_region_voxels_tot*100;
+%     percentage_unphysical_CBF_subj(end+1)=percentage_unphysical_CBF;   
+% 
+% %     V_CBF_masked(CBF_unphysical)=[]; you have to keep them
+% 
+%     %count number of values lower or equal to NaNs in CBF region
+%     CBF_nans=find(isnan(V_CBF_masked));
+%     n_CBF_nans=length(CBF_nans);
+%     percentage_nans_CBF=n_CBF_nans/n_CBF_region_voxels_tot;
+%     percentage_nans_CBF_subj(end+1)=percentage_nans_CBF;
 
-%     V_CBF_masked(CBF_zeros)=[];
-
-    CBF_nans=find(isnan(V_CBF_masked));
-    n_CBF_nans=length(CBF_nans);
-    percentage_nans_CBF=n_CBF_nans/n_CBF_region_voxels_tot;
-    percentage_nans_CBF_subj(end+1)=percentage_nans_CBF;
-
-    
-    %compute medians
+    %%%%%%%%%compute medians
     medians_CMRO2_subj(end+1) = nanmedian(V_CMRO2_masked);
-    medians_CBF_subj(end+1) = nanmedian(V_CBF_masked);
+    % medians_CBF_subj(end+1) = nanmedian(V_CBF_masked);
+
+    %debugging
+    % if isnan(medians_CMRO2_subj)
+    %     break
+    % end
 
     labels_func_subj(end+1) = regions_func(region);
 
-    %calculate PVE regional medians 
+    %%%%%%%%%calculate PVE regional means 
+
+    %select the region
     V_pve_0_func_masked = V_pve_0_func_original.*V_mask_func;
-    %remove background
-    mask_func_zeros = find(V_pve_0_func_masked==0);
-    V_pve_0_func_masked(mask_func_zeros)=[];
-
-    V_pve_0_func_median = median(V_pve_0_func_masked(:)); 
-    V_pve_0_func_median_subj(end+1) = V_pve_0_func_median;
-
     V_pve_1_func_masked = V_pve_1_func_original.*V_mask_func;
-    %remove background
-    mask_func_zeros = find(V_pve_1_func_masked==0);
-    V_pve_1_func_masked(mask_func_zeros)=[];
-
-    V_pve_1_func_median = median(V_pve_1_func_masked(:));
-    V_pve_1_func_median_subj(end+1) = V_pve_1_func_median;
-
     V_pve_2_func_masked = V_pve_2_func_original.*V_mask_func;
-    %remove background
-    mask_func_zeros = find(V_pve_2_func_masked==0);
+
+    %select zeros from background
+    mask_func_zeros = find(V_mask_func==0);
+
+    %remove zeros from background
+    V_pve_0_func_masked(mask_func_zeros)=[];
+    V_pve_1_func_masked(mask_func_zeros)=[];
     V_pve_2_func_masked(mask_func_zeros)=[];
 
-    V_pve_2_func_median = median(V_pve_2_func_masked(:)); 
-    V_pve_2_func_median_subj(end+1) = V_pve_2_func_median;
+    %calculate mean and append to the list
+    V_pve_0_func_mean = mean(V_pve_0_func_masked(:)); 
+    V_pve_0_func_mean_subj(end+1) = V_pve_0_func_mean;
+
+    V_pve_1_func_mean = mean(V_pve_1_func_masked(:));
+    V_pve_1_func_mean_subj(end+1) = V_pve_1_func_mean;
+
+    V_pve_2_func_mean = mean(V_pve_2_func_masked(:)); 
+    V_pve_2_func_mean_subj(end+1) = V_pve_2_func_mean;
 
     end
         
     medians_CMRO2_subjs(subj,1:n_regions_func) = medians_CMRO2_subj;
-    medians_CBF_subjs(subj,1:n_regions_func) = medians_CBF_subj;
+    % medians_CBF_subjs(subj,1:n_regions_func) = medians_CBF_subj;
     labels_func_subjs(subj,1:n_regions_func) = labels_func_subj;
-    percentage_removal_CMRO2_subjs(subj,1:n_regions_func) = percentage_removal_CMRO2_subj;
-    percentage_removal_CBF_subjs(subj,1:n_regions_func) = percentage_removal_CBF_subj;
+    percentage_zeros_CMRO2_subjs(subj,1:n_regions_func) = percentage_zeros_CMRO2_subj;
+    % percentage_unphysical_CBF_subjs(subj,1:n_regions_func) = percentage_unphysical_CBF_subj;
     percentage_nans_CMRO2_subjs(subj,1:n_regions_func) = percentage_nans_CMRO2_subj;
-    percentage_nans_CBF_subjs(subj,1:n_regions_func) = percentage_nans_CBF_subj;
+    % percentage_nans_CBF_subjs(subj,1:n_regions_func) = percentage_nans_CBF_subj;
 
-    V_pve_0_func_median_subjs(subj,1:n_regions_func) = V_pve_0_func_median_subj;
-    V_pve_1_func_median_subjs(subj,1:n_regions_func) = V_pve_1_func_median_subj;
-    V_pve_2_func_median_subjs(subj,1:n_regions_func) = V_pve_2_func_median_subj;
+    V_pve_0_func_mean_subjs(subj,1:n_regions_func) = V_pve_0_func_mean_subj;
+    V_pve_1_func_mean_subjs(subj,1:n_regions_func) = V_pve_1_func_mean_subj;
+    V_pve_2_func_mean_subjs(subj,1:n_regions_func) = V_pve_2_func_mean_subj;
 
     %%%%DWI space
     regions_dwi = unique(V_atlas_dwi(:));
@@ -531,7 +724,7 @@ for subj = 1:n_subjs
     % V_pve_2_dwi(V_pve_2_dwi==0)=NaN;
     % V_pve_2_dwi(V_pve_2_dwi>0)=0;
     % V_pve_2_dwi(isnan(V_pve_2_dwi))=1;
-
+    % 
     %In case you want to mask by considering not all the CSF
     V_pve_0_dwi(V_pve_0_dwi<pve_0_threshold_dwi)=NaN;
     V_pve_0_dwi(V_pve_0_dwi>=pve_0_threshold_dwi)=0;
@@ -546,6 +739,7 @@ for subj = 1:n_subjs
     V_atlas_mask_dwi=V_atlas_dwi;
     %binarize atlas
     for region = 1:n_regions_dwi
+
     for ii = 1:length(V_atlas_dwi(:))
         if V_atlas_dwi(ii) == region
             V_atlas_mask_dwi(ii) = 1;
@@ -555,9 +749,18 @@ for subj = 1:n_subjs
     end
 
 
+    if strcmp(masking,'GM')
+        V_GM = V_pve_1_dwi;
+    elseif strcmp(masking,'all')
+        V_GM = V_pve_1_dwi.*V_pve_0_dwi.*V_pve_2_dwi;
+    end
 
-    V_GM = V_pve_1_dwi.*V_pve_2_dwi.*V_pve_0_dwi;
-    V_mask_dwi = V_GM.*V_atlas_mask_dwi;
+    if strcmp(rois,'complete')
+        V_mask_dwi = V_atlas_mask_dwi;
+    else
+        V_mask_dwi = V_atlas_mask_dwi.*V_GM;
+    end
+
     V_mask_dwi_fs = V_mask_dwi.*V_fsoma_to_mask;
 
     %mask
@@ -572,9 +775,6 @@ for subj = 1:n_subjs
     V_Din_masked = V_Din.*V_mask_dwi;
     V_fextra_masked = V_fextra.*V_mask_dwi;
     
-    V_MSE_masked_rsoma = V_MSE.*V_mask_dwi_fs;
-    V_MSE_masked = V_MSE.*V_mask_dwi;
-
     %remove background
     mask_dwi_fs_zeros = find(V_mask_dwi_fs==0);
     mask_dwi_zeros = find(V_mask_dwi==0);
@@ -588,103 +788,149 @@ for subj = 1:n_subjs
     V_De_masked(mask_dwi_zeros)=[];
     V_Din_masked(mask_dwi_zeros)=[];
     V_fextra_masked(mask_dwi_zeros)=[];
-    
-    V_MSE_masked_rsoma(mask_dwi_fs_zeros)=[];
-    V_MSE_masked(mask_dwi_zeros)=[];
 
-    
+    if strcmp(mse_threshold,'yes')
 
-    % %remove voxels which have MSE higher than 75th percentile
-    idx_high_MSE_micropar=find(V_MSE_masked>prctile(V_MSE_masked,75));
-    idx_high_MSE_rsoma=find(V_MSE_masked_rsoma>prctile(V_MSE_masked_rsoma,75));
+        V_MSE_masked_rsoma = V_MSE.*V_mask_dwi_fs; %MSE
+        V_MSE_masked = V_MSE.*V_mask_dwi; %MSE
 
-%FIND INDEX THAT HAVE ERROR HIGHER THAN A CERTAIN DISTRIBUTION
-    %PERCENTILE.
-    %COUNT THE PERCENTAGE
-    percentage_high_MSE_rsoma = numel(idx_high_MSE_rsoma)/numel(V_rsoma_masked);
+        V_MSE_masked_rsoma(mask_dwi_fs_zeros)=[]; %MSE
+        V_MSE_masked(mask_dwi_zeros)=[]; %MSE
 
-    percentage_high_MSE_micropar = numel(idx_high_MSE_micropar)/numel(V_fsoma_masked);
 
-    %REMOVE THEM
-    V_rsoma_masked(idx_high_MSE_rsoma)=[];
-    V_fsoma_masked(idx_high_MSE_micropar)=[];
-    V_fneurite_masked(idx_high_MSE_micropar)=[];
-    V_De_masked(idx_high_MSE_micropar)=[];
-    V_Din_masked(idx_high_MSE_micropar)=[];
-    V_fextra_masked(idx_high_MSE_micropar)=[];
 
-    n_rsoma_region_voxels_tot = numel(V_rsoma_masked);%%%%
-    rsoma_nans=find(isnan(V_rsoma_masked));%%%%
-    n_rsoma_nans=length(rsoma_nans);%%%%
-    percentage_nans_rsoma=n_rsoma_nans/n_rsoma_region_voxels_tot;%%%%
-    percentage_nans_rsoma_subj(end+1)=percentage_nans_rsoma;%%%%
+        %%%%%%%%find voxels which have MSE higher than Nth percentile
+        idx_high_MSE_micropar=find(V_MSE_masked>prctile(V_MSE_masked,mse_threshold_value)); %MSE
+        idx_high_MSE_rsoma=find(V_MSE_masked_rsoma>prctile(V_MSE_masked_rsoma,mse_threshold_value)); %MSE
+
+        %COUNT THE PERCENTAGE
+        percentage_high_MSE_rsoma = numel(idx_high_MSE_rsoma)/numel(V_rsoma_masked); %MSE
+
+        percentage_high_MSE_micropar = numel(idx_high_MSE_micropar)/numel(V_fsoma_masked); %MSE
+
+        %REMOVE THEM
+        V_rsoma_masked(idx_high_MSE_rsoma)=[]; %MSE
+        V_fsoma_masked(idx_high_MSE_micropar)=[]; %MSE
+        V_fc_masked(idx_high_MSE_micropar)=[]; %MSE
+        V_fsup_masked(idx_high_MSE_micropar)=[]; %MSE
+
+        V_fneurite_masked(idx_high_MSE_micropar)=[]; %MSE
+        V_De_masked(idx_high_MSE_micropar)=[]; %MSE
+        V_Din_masked(idx_high_MSE_micropar)=[]; %MSE
+        V_fextra_masked(idx_high_MSE_micropar)=[]; %MSE
+
+    end
+    % count number of nans in Rsoma regions
+    % attention: there should not be. 
+    % you can find some median values equal to NaN because 
+    % there are no voxels, so median[]=NaN.
+    n_rsoma_region_voxels_tot = numel(V_rsoma_masked);
+    rsoma_nans=find(isnan(V_rsoma_masked));
+    n_rsoma_nans=length(rsoma_nans);
+    percentage_nans_rsoma=n_rsoma_nans/n_rsoma_region_voxels_tot;
+    percentage_nans_rsoma_subj(end+1)=percentage_nans_rsoma;
 
     %compute medians and save results
     
-    medians_rsoma_subj(end+1) = nanmedian(V_rsoma_masked);%
-    medians_fsoma_subj(end+1) = nanmedian(V_fsoma_masked);%
-    medians_fc_subj(end+1) = nanmedian(V_fc_masked);%
-    medians_fsup_subj(end+1) = nanmedian(V_fsup_masked);%
+    medians_rsoma_subj(end+1) = nanmedian(V_rsoma_masked);
+    medians_fsoma_subj(end+1) = nanmedian(V_fsoma_masked);
+    medians_fc_subj(end+1) = nanmedian(V_fc_masked);
+    medians_fsup_subj(end+1) = nanmedian(V_fsup_masked);
 
-    medians_fneurite_subj(end+1) = nanmedian(V_fneurite_masked);%
-    medians_De_subj(end+1) = nanmedian(V_De_masked);%
-    medians_Din_subj(end+1) = nanmedian(V_Din_masked);%
-    medians_fextra_subj(end+1) = nanmedian(V_fextra_masked);%
-    medians_mse_subj(end+1) = nanmedian(V_MSE_masked);%
-    medians_mse_rsoma_subj(end+1) = nanmedian(V_MSE_masked_rsoma);%
+    medians_fneurite_subj(end+1) = nanmedian(V_fneurite_masked);
+    medians_De_subj(end+1) = nanmedian(V_De_masked);
+    medians_Din_subj(end+1) = nanmedian(V_Din_masked);
+    medians_fextra_subj(end+1) = nanmedian(V_fextra_masked);
 
-    labels_dwi_subj(end+1) = regions_dwi(region);%   
+    % 
+    labels_dwi_subj(end+1) = regions_dwi(region);  
     
-    percentage_removal_microparameter_subj(end+1) = percentage_high_MSE_micropar;
-    percentage_removal_rsoma_subj(end+1) = percentage_high_MSE_rsoma;%%%
+    if strcmp(mse_threshold,'yes')
+        medians_mse_subj(end+1) = nanmedian(V_MSE_masked); %MSE
+        medians_mse_rsoma_subj(end+1) = nanmedian(V_MSE_masked_rsoma); %MSE
+        percentage_high_MSE_microparameter_subj(end+1) = percentage_high_MSE_micropar; %MSE
+        percentage_high_MSE_rsoma_subj(end+1) = percentage_high_MSE_rsoma; %MSE
+    end
 
-    %calculate PVE regional medians %use V_mask_dwi_fs as we are interested
-    %in Rsoma
-    V_pve_0_dwi_masked = V_pve_0_dwi_original.*V_mask_dwi_fs;
-    %remove background
-    mask_dwi_zeros = find(V_pve_0_dwi_masked==0);
+    %calculate PVE regional means
+
+    %valid for Rsoma
+    %select the region
+    V_pve_0_dwi_masked_fs = V_pve_0_dwi_original.*V_mask_dwi_fs;
+    V_pve_1_dwi_masked_fs = V_pve_1_dwi_original.*V_mask_dwi_fs;
+    V_pve_2_dwi_masked_fs = V_pve_2_dwi_original.*V_mask_dwi_fs;
+
+    %select zeros from background
+    mask_dwi_fs_zeros = find(V_mask_dwi_fs==0);
+
+    %remove zeros from background
+    V_pve_0_dwi_masked_fs(mask_dwi_fs_zeros)=[];
+    V_pve_1_dwi_masked_fs(mask_dwi_fs_zeros)=[];
+    V_pve_2_dwi_masked_fs(mask_dwi_fs_zeros)=[];
+
+    %calculate mean and append to the list
+    V_pve_0_dwi_fs_mean = mean(V_pve_0_dwi_masked_fs(:));
+    V_pve_0_dwi_fs_mean_subj(end+1) = V_pve_0_dwi_fs_mean;
+
+    V_pve_1_dwi_fs_mean = mean(V_pve_1_dwi_masked_fs(:));
+    V_pve_1_dwi_fs_mean_subj(end+1) = V_pve_1_dwi_fs_mean;
+
+    V_pve_2_dwi_fs_mean = mean(V_pve_2_dwi_masked_fs(:));
+    V_pve_2_dwi_fs_mean_subj(end+1) = V_pve_2_dwi_fs_mean;
+
+    %valid for all microparameters except Rsoma
+    %select the region
+    V_pve_0_dwi_masked = V_pve_0_dwi_original.*V_mask_dwi;
+    V_pve_1_dwi_masked = V_pve_1_dwi_original.*V_mask_dwi;
+    V_pve_2_dwi_masked = V_pve_2_dwi_original.*V_mask_dwi;
+
+    %select zeros from background
+    mask_dwi_zeros = find(V_mask_dwi==0);
+
+    %remove zeros from background
     V_pve_0_dwi_masked(mask_dwi_zeros)=[];
-
-    V_pve_0_dwi_median = median(V_pve_0_dwi_masked(:)); 
-    V_pve_0_dwi_median_subj(end+1) = V_pve_0_dwi_median;
-
-    V_pve_1_dwi_masked = V_pve_1_dwi_original.*V_mask_dwi_fs;
-    %remove background
-    mask_dwi_zeros = find(V_pve_1_dwi_masked==0);
     V_pve_1_dwi_masked(mask_dwi_zeros)=[];
-
-    V_pve_1_dwi_median = median(V_pve_1_dwi_masked(:));
-    V_pve_1_dwi_median_subj(end+1) = V_pve_1_dwi_median;
-
-    V_pve_2_dwi_masked = V_pve_2_dwi_original.*V_mask_dwi_fs;
-    %remove background
-    mask_dwi_zeros = find(V_pve_2_dwi_masked==0);
     V_pve_2_dwi_masked(mask_dwi_zeros)=[];
 
-    V_pve_2_dwi_median = median(V_pve_2_dwi_masked(:)); 
-    V_pve_2_dwi_median_subj(end+1) = V_pve_2_dwi_median;
+    %calculate mean and append to the list
+    V_pve_0_dwi_mean = mean(V_pve_0_dwi_masked(:));
+    V_pve_0_dwi_mean_subj(end+1) = V_pve_0_dwi_mean;
+
+    V_pve_1_dwi_mean = mean(V_pve_1_dwi_masked(:));
+    V_pve_1_dwi_mean_subj(end+1) = V_pve_1_dwi_mean;
+
+    V_pve_2_dwi_mean = mean(V_pve_2_dwi_masked(:));
+    V_pve_2_dwi_mean_subj(end+1) = V_pve_2_dwi_mean;
+
     end
     
-    labels_dwi_subjs(subj,1:n_regions_dwi) = labels_dwi_subj;%
-    medians_rsoma_subjs(subj,1:n_regions_dwi) = medians_rsoma_subj;%
-    medians_fsoma_subjs(subj,1:n_regions_dwi) = medians_fsoma_subj;%
-    medians_fc_subjs(subj,1:n_regions_dwi) = medians_fc_subj;%
-    medians_fsup_subjs(subj,1:n_regions_dwi) = medians_fsup_subj;%
+    labels_dwi_subjs(subj,1:n_regions_dwi) = labels_dwi_subj;
+    medians_rsoma_subjs(subj,1:n_regions_dwi) = medians_rsoma_subj;
+    medians_fsoma_subjs(subj,1:n_regions_dwi) = medians_fsoma_subj;
+    medians_fc_subjs(subj,1:n_regions_dwi) = medians_fc_subj;
+    medians_fsup_subjs(subj,1:n_regions_dwi) = medians_fsup_subj;
 
-    medians_fneurite_subjs(subj,1:n_regions_dwi) = medians_fneurite_subj;%
-    medians_Din_subjs(subj,1:n_regions_dwi) = medians_Din_subj;%
-    medians_De_subjs(subj,1:n_regions_dwi) = medians_De_subj;%
-    medians_fextra_subjs(subj,1:n_regions_dwi) = medians_fextra_subj;%
+    medians_fneurite_subjs(subj,1:n_regions_dwi) = medians_fneurite_subj;
+    medians_Din_subjs(subj,1:n_regions_dwi) = medians_Din_subj;
+    medians_De_subjs(subj,1:n_regions_dwi) = medians_De_subj;
+    medians_fextra_subjs(subj,1:n_regions_dwi) = medians_fextra_subj;
 
-    medians_mse_rsoma_subjs(subj,1:n_regions_dwi)=medians_mse_rsoma_subj;
-    medians_mse_subjs(subj,1:n_regions_dwi)=medians_rsoma_subj;
-    percentage_removal_microparameter_subjs(subj,1:n_regions_dwi) = percentage_removal_microparameter_subj;
-    percentage_removal_rsoma_subjs(subj,1:n_regions_dwi) = percentage_removal_rsoma_subj;
-    percentage_nans_rsoma_subjs(subj,1:n_regions_dwi)=percentage_nans_rsoma_subj;%%%%
+    if strcmp(mse_threshold,'yes')
+        medians_mse_rsoma_subjs(subj,1:n_regions_dwi)=medians_mse_rsoma_subj; %MSE
+        medians_mse_subjs(subj,1:n_regions_dwi)=medians_rsoma_subj; %MSE
+        percentage_high_MSE_microparameter_subjs(subj,1:n_regions_dwi) = percentage_high_MSE_microparameter_subj; %MSE
+        percentage_high_MSE_rsoma_subjs(subj,1:n_regions_dwi) = percentage_high_MSE_rsoma_subj; %MSE
+    end
 
-    V_pve_0_dwi_median_subjs(subj,1:n_regions_dwi) = V_pve_0_dwi_median_subj;
-    V_pve_1_dwi_median_subjs(subj,1:n_regions_dwi) = V_pve_1_dwi_median_subj;
-    V_pve_2_dwi_median_subjs(subj,1:n_regions_dwi) = V_pve_2_dwi_median_subj;
+    percentage_nans_rsoma_subjs(subj,1:n_regions_dwi)=percentage_nans_rsoma_subj;
+
+    V_pve_0_dwi_mean_subjs(subj,1:n_regions_dwi) = V_pve_0_dwi_mean_subj;
+    V_pve_1_dwi_mean_subjs(subj,1:n_regions_dwi) = V_pve_1_dwi_mean_subj;
+    V_pve_2_dwi_mean_subjs(subj,1:n_regions_dwi) = V_pve_2_dwi_mean_subj;
+
+    V_pve_0_dwi_fs_mean_subjs(subj,1:n_regions_dwi) = V_pve_0_dwi_fs_mean_subj;
+    V_pve_1_dwi_fs_mean_subjs(subj,1:n_regions_dwi) = V_pve_1_dwi_fs_mean_subj;
+    V_pve_2_dwi_fs_mean_subjs(subj,1:n_regions_dwi) = V_pve_2_dwi_fs_mean_subj;
 
     toc
     disp(strcat('Finished subject', num2str(subj),'Starting subject', num2str(subj+1)))
@@ -695,7 +941,7 @@ timeElapsed = toc(start_time);
 %% select variables to examine
 
 energy_parameter = 'CMRO2';
-micro_parameter = 'Rsoma';
+micro_parameter = 'fc';
 
 %% remove uncommon labels between subjects and between spaces
 %% select matrices
@@ -712,7 +958,7 @@ end
 
 if strcmp(energy_parameter,'CMRO2')
     medians_func_subjs = medians_CMRO2_subjs;
-    percentage_removal_func_subjs = percentage_removal_CMRO2_subjs;
+    percentage_removal_func_subjs = percentage_zeros_CMRO2_subjs;
     percentage_nans_func_subjs = percentage_nans_CMRO2_subjs;
 elseif strcmp(energy_parameter,'CBF')
     medians_func_subjs = medians_CBF_subjs;
@@ -723,12 +969,12 @@ end
 
 %% The following blocks are to select common regions
 
-%% dwi space 
+%% I dwi space 
 
 % detect common labels in dwi space across subjs
 initial_common = labels_dwi_subjs(1,:);
 common = initial_common;
-for i = 1:length(labels_dwi_subjs(:,1))
+for i = 1:n_subjs
     commonElements = intersect(common, labels_dwi_subjs(i,:));
     common = commonElements;
 end
@@ -736,24 +982,24 @@ end
 %First, detect indices of common Elements
 commonElements(commonElements==0)=[];
 lst_idx_matrix_dwi=[];
-for row = 1:length(labels_dwi_subjs(:,1))
+for row = 1:n_subjs
     lst_idx_row=[];
     for i = 1:length(commonElements)
         commonElement = commonElements(i);            
         idx = find(labels_dwi_subjs(row,:) == commonElement);
-        if length(idx)>1
-            lst_idx_row(1,:)=idx;
-        else
+        % if length(idx)>1
+        %     lst_idx_row(1,:)=idx;
+        % else
             lst_idx_row(end+1)=idx;
-        end
+        % end
     end
     lst_idx_matrix_dwi(row,:)=lst_idx_row;
 end
 
-%Secondly, select elements corresponding to common indices
+%Secondly,select elements corresponding to common indices
 %apply this both to the median values and labels
 medians_dwi_subjs_final=[];
-for row = 1:length(medians_dwi_subjs(:,1))
+for row = 1:n_subjs
     medians_dwi_subjs_row=medians_dwi_subjs(row,:);
     lst_idx = lst_idx_matrix_dwi(row,:);
     medians_dwi_subjs_row_final=medians_dwi_subjs_row(lst_idx);
@@ -761,40 +1007,44 @@ for row = 1:length(medians_dwi_subjs(:,1))
 end
 
 labels_dwi_subjs_final=[];
-for row = 1:length(labels_dwi_subjs(:,1))
+for row = 1:n_subjs
     labels_dwi_subjs_row=labels_dwi_subjs(row,:);
     lst_idx = lst_idx_matrix_dwi(row,:);
     labels_dwi_subjs_row_final=labels_dwi_subjs_row(lst_idx);
     labels_dwi_subjs_final(row,:)=labels_dwi_subjs_row_final;
 end
 
-V_pve_0_dwi_median_subjs_final=[];
-for row = 1:length(V_pve_0_dwi_median_subjs(:,1))
-    V_pve_0_dwi_median_subjs_row=V_pve_0_dwi_median_subjs(row,:);
+V_pve_0_dwi_mean_subjs_final=[];
+for row = 1:n_subjs
+    V_pve_0_dwi_mean_subjs_row=V_pve_0_dwi_mean_subjs(row,:);
     lst_idx = lst_idx_matrix_dwi(row,:);
-    V_pve_0_dwi_median_subjs_row_final=V_pve_0_dwi_median_subjs_row(lst_idx);
-    V_pve_0_dwi_median_subjs_final(row,:)=V_pve_0_dwi_median_subjs_row_final;
+    V_pve_0_dwi_mean_subjs_row_final=V_pve_0_dwi_mean_subjs_row(lst_idx);
+    V_pve_0_dwi_mean_subjs_final(row,:)=V_pve_0_dwi_mean_subjs_row_final;
 end
 
-V_pve_1_dwi_median_subjs_final=[];
-for row = 1:length(V_pve_1_dwi_median_subjs(:,1))
-    V_pve_1_dwi_median_subjs_row=V_pve_1_dwi_median_subjs(row,:);
+V_pve_1_dwi_mean_subjs_final=[];
+for row = 1:n_subjs
+    V_pve_1_dwi_mean_subjs_row=V_pve_1_dwi_mean_subjs(row,:);
     lst_idx = lst_idx_matrix_dwi(row,:);
-    V_pve_1_dwi_median_subjs_row_final=V_pve_1_dwi_median_subjs_row(lst_idx);
-    V_pve_1_dwi_median_subjs_final(row,:)=V_pve_1_dwi_median_subjs_row_final;
+    V_pve_1_dwi_mean_subjs_row_final=V_pve_1_dwi_mean_subjs_row(lst_idx);
+    V_pve_1_dwi_mean_subjs_final(row,:)=V_pve_1_dwi_mean_subjs_row_final;
 end
 
-V_pve_2_dwi_median_subjs_final=[];
-for row = 1:length(V_pve_2_dwi_median_subjs(:,1))
-    V_pve_2_dwi_median_subjs_row=V_pve_2_dwi_median_subjs(row,:);
+V_pve_2_dwi_mean_subjs_final=[];
+for row = 1:n_subjs
+    V_pve_2_dwi_mean_subjs_row=V_pve_2_dwi_mean_subjs(row,:);
     lst_idx = lst_idx_matrix_dwi(row,:);
-    V_pve_2_dwi_median_subjs_row_final=V_pve_2_dwi_median_subjs_row(lst_idx);
-    V_pve_2_dwi_median_subjs_final(row,:)=V_pve_2_dwi_median_subjs_row_final;
+    V_pve_2_dwi_mean_subjs_row_final=V_pve_2_dwi_mean_subjs_row(lst_idx);
+    V_pve_2_dwi_mean_subjs_final(row,:)=V_pve_2_dwi_mean_subjs_row_final;
 end
+
+%% if you have MSE
+%these matrices are needed to check if at higher variability correspond
+%high mse median regional values.
 
 if strcmp(micro_parameter,'Rsoma')    
     medians_mse_rsoma_subjs_final=[];
-    for row = 1:length(medians_mse_rsoma_subjs(:,1))
+    for row = 1:n_subjs
         medians_mse_rsoma_subjs_row=medians_mse_rsoma_subjs(row,:);
         lst_idx = lst_idx_matrix_dwi(row,:);
         medians_mse_rsoma_subjs_row_final=medians_mse_rsoma_subjs_row(lst_idx);
@@ -802,29 +1052,31 @@ if strcmp(micro_parameter,'Rsoma')
     end
 else
     medians_mse_subjs_final=[];
-    for row = 1:length(medians_mse_subjs(:,1))
+    for row = 1:n_subjs
         medians_mse_subjs_row=medians_mse_subjs(row,:);
         lst_idx = lst_idx_matrix_dwi(row,:);
         medians_mse_subjs_row_final=medians_mse_subjs_row(lst_idx);
         medians_mse_subjs_final(row,:)=medians_mse_subjs_row_final;
     end
 end
-%in case you remove voxels with high MSE values
+
+%in case you remove regions with high MSE values
+
 if strcmp(micro_parameter,'rsoma')    
-    percentage_removal_rsoma_subjs_final=[];
-    for row = 1:length(percentage_removal_rsoma_subjs(:,1))
-        percentage_removal_rsoma_subjs_row=percentage_removal_rsoma_subjs(row,:);
+    percentage_high_MSE_rsoma_subjs_final=[];
+    for row = 1:n_subjs
+        percentage_high_MSE_rsoma_subjs_row=percentage_high_MSE_rsoma_subjs(row,:);
         lst_idx = lst_idx_matrix_dwi(row,:);
-        percentage_removal_rsoma_subjs_row_final=percentage_removal_rsoma_subjs_row(lst_idx);
-        percentage_removal_rsoma_subjs_final(row,:)=percentage_removal_rsoma_subjs_row_final;
+        percentage_high_MSE_rsoma_subjs_row_final=percentage_high_MSE_rsoma_subjs_row(lst_idx);
+        percentage_high_MSE_rsoma_subjs_final(row,:)=percentage_high_MSE_rsoma_subjs_row_final;
     end
 else
-    percentage_removal_microparameter_subjs_final=[];
-    for row = 1:length(percentage_removal_microparameter_subjs(:,1))
-        percentage_removal_microparameter_subjs_row=percentage_removal_microparameter_subjs(row,:);
+    percentage_high_MSE_microparameter_subjs_final=[];
+    for row = 1:n_subjs
+        percentage_high_MSE_microparameter_subjs_row=percentage_high_MSE_microparameter_subjs(row,:);
         lst_idx = lst_idx_matrix_dwi(row,:);
-        percentage_removal_microparameter_subjs_row_final=percentage_removal_microparameter_subjs_row(lst_idx);
-        percentage_removal_microparameter_subjs_final(row,:)=percentage_removal_microparameter_subjs_row_final;
+        percentage_high_MSE_microparameter_subjs_row_final=percentage_high_MSE_microparameter_subjs_row(lst_idx);
+        percentage_high_MSE_microparameter_subjs_final(row,:)=percentage_high_MSE_microparameter_subjs_row_final;
     end
 end
 
@@ -833,7 +1085,7 @@ end
 % detect common labels in func space across subjs
 initial_common = labels_func_subjs(1,:);
 common = initial_common;
-for i = 1:length(labels_func_subjs(:,1))
+for i = 1:n_subjs
     commonElements = intersect(common, labels_func_subjs(i,:));
     common = commonElements;
 end
@@ -841,16 +1093,16 @@ end
 %First, detect indices of common Elements
 commonElements(commonElements==0)=[];
 lst_idx_matrix_func=[];
-for row = 1:length(labels_func_subjs(:,1))
+for row = 1:n_subjs
     lst_idx_row=[];
     for i = 1:length(commonElements)
-        commonElement = commonElements(i);            
+        commonElement = commonElements(i);
         idx = find(labels_func_subjs(row,:) == commonElement);
-        if length(idx)>1
-            lst_idx_row(1,:)=idx;
-        else
-            lst_idx_row(end+1)=idx;
-        end
+        % if length(idx)>1
+        %     lst_idx_row(1,:)=idx;
+        % else
+        lst_idx_row(end+1)=idx;
+        % end
     end
     lst_idx_matrix_func(row,:)=lst_idx_row;
 end
@@ -858,7 +1110,7 @@ end
 %Secondly, select elements corresponding to common indices
 %apply this both to the median values and labels
 medians_func_subjs_final=[];
-for row = 1:length(medians_func_subjs(:,1))
+for row = 1:n_subjs
     medians_func_subjs_row=medians_func_subjs(row,:);
     lst_idx = lst_idx_matrix_func(row,:);
     medians_func_subjs_row_final=medians_func_subjs_row(lst_idx);
@@ -866,53 +1118,53 @@ for row = 1:length(medians_func_subjs(:,1))
 end
 
 labels_func_subjs_final=[];
-for row = 1:length(labels_func_subjs(:,1))
+for row = 1:n_subjs
     labels_func_subjs_row=labels_func_subjs(row,:);
     lst_idx = lst_idx_matrix_func(row,:);
     labels_func_subjs_row_final=labels_func_subjs_row(lst_idx);
     labels_func_subjs_final(row,:)=labels_func_subjs_row_final;
 end
 
-V_pve_0_func_median_subjs_final=[];
-for row = 1:length(V_pve_0_func_median_subjs(:,1))
-    V_pve_0_func_median_subjs_row=V_pve_0_func_median_subjs(row,:);
+V_pve_0_func_mean_subjs_final=[];
+for row = 1:n_subjs
+    V_pve_0_func_mean_subjs_row=V_pve_0_func_mean_subjs(row,:);
     lst_idx = lst_idx_matrix_func(row,:);
-    V_pve_0_func_median_subjs_row_final=V_pve_0_func_median_subjs_row(lst_idx);
-    V_pve_0_func_median_subjs_final(row,:)=V_pve_0_func_median_subjs_row_final;
+    V_pve_0_func_mean_subjs_row_final=V_pve_0_func_mean_subjs_row(lst_idx);
+    V_pve_0_func_mean_subjs_final(row,:)=V_pve_0_func_mean_subjs_row_final;
 end
 
-V_pve_1_func_median_subjs_final=[];
-for row = 1:length(V_pve_1_func_median_subjs(:,1))
-    V_pve_1_func_median_subjs_row=V_pve_1_func_median_subjs(row,:);
+V_pve_1_func_mean_subjs_final=[];
+for row = 1:n_subjs
+    V_pve_1_func_mean_subjs_row=V_pve_1_func_mean_subjs(row,:);
     lst_idx = lst_idx_matrix_func(row,:);
-    V_pve_1_func_median_subjs_row_final=V_pve_1_func_median_subjs_row(lst_idx);
-    V_pve_1_func_median_subjs_final(row,:)=V_pve_1_func_median_subjs_row_final;
+    V_pve_1_func_mean_subjs_row_final=V_pve_1_func_mean_subjs_row(lst_idx);
+    V_pve_1_func_mean_subjs_final(row,:)=V_pve_1_func_mean_subjs_row_final;
 end
 
-V_pve_2_func_median_subjs_final=[];
-for row = 1:length(V_pve_2_func_median_subjs(:,1))
-    V_pve_2_func_median_subjs_row=V_pve_2_func_median_subjs(row,:);
+V_pve_2_func_mean_subjs_final=[];
+for row = 1:n_subjs
+    V_pve_2_func_mean_subjs_row=V_pve_2_func_mean_subjs(row,:);
     lst_idx = lst_idx_matrix_func(row,:);
-    V_pve_2_func_median_subjs_row_final=V_pve_2_func_median_subjs_row(lst_idx);
-    V_pve_2_func_median_subjs_final(row,:)=V_pve_2_func_median_subjs_row_final;
+    V_pve_2_func_mean_subjs_row_final=V_pve_2_func_mean_subjs_row(lst_idx);
+    V_pve_2_func_mean_subjs_final(row,:)=V_pve_2_func_mean_subjs_row_final;
 end
 
 %percentage of zeros in the different regions of different subjects
-percentage_removal_func_subjs_final=[];
-for row = 1:length(percentage_removal_func_subjs(:,1))
-    percentage_removal_func_subjs_row=percentage_removal_func_subjs(row,:);
+percentage_zeros_CMRO2_subjs_final=[];
+for row = 1:n_subjs
+    percentage_zeros_CMRO2_subjs_row=percentage_zeros_CMRO2_subjs(row,:);
     lst_idx = lst_idx_matrix_func(row,:);
-    percentage_removal_func_subjs_row_final=percentage_removal_func_subjs_row(lst_idx);
-    percentage_removal_func_subjs_final(row,:)=percentage_removal_func_subjs_row_final;
+    percentage_zeros_CMRO2_subjs_row_final=percentage_zeros_CMRO2_subjs_row(lst_idx);
+    percentage_zeros_CMRO2_subjs_final(row,:)=percentage_zeros_CMRO2_subjs_row_final;
 end
 
 %percentage of nans in the different regions of different subjects
-percentage_nans_func_subjs_final=[];
-for row = 1:length(percentage_nans_func_subjs(:,1))
-    percentage_nans_func_subjs_row=percentage_nans_func_subjs(row,:);
+percentage_nans_CMRO2_subjs_final=[];
+for row = 1:n_subjs
+    percentage_nans_CMRO2_subjs_row=percentage_nans_CMRO2_subjs(row,:);
     lst_idx = lst_idx_matrix_func(row,:);
-    percentage_nans_func_subjs_row_final=percentage_nans_func_subjs_row(lst_idx);
-    percentage_nans_func_subjs_final(row,:)=percentage_nans_func_subjs_row_final;
+    percentage_nans_CMRO2_subjs_row_final=percentage_nans_CMRO2_subjs_row(lst_idx);
+    percentage_nans_CMRO2_subjs_final(row,:)=percentage_nans_CMRO2_subjs_row_final;
 end
 
 %%
@@ -922,11 +1174,10 @@ end
 %keep only those common both in DWI and func space
 %create a new dwi and func matrix which will have same size.
 
-%%
-%select common elements between the two spaces
+%% select common elements between the two spaces
 
 commonElements_lst=[];
-for row = 1:length(labels_dwi_subjs_final(:,1))
+for row = 1:n_subjs
     commonElements = intersect(labels_dwi_subjs_final(row,:),labels_func_subjs_final(row,:));
     if length(commonElements)>1
         commonElements_lst(1,:)=commonElements;
@@ -942,16 +1193,16 @@ commonElements(commonElements==0)=[];
 %First, detect indices of common Elements
 
 lst_idx_matrix_dwi_spaces=[];
-for row = 1:length(labels_dwi_subjs_final(:,1))
+for row = 1:n_subjs
     lst_idx_row=[];
     for i = 1:length(commonElements)
-        commonElement = commonElements(i);            
+        commonElement = commonElements(i);
         idx = find(labels_dwi_subjs_final(row,:) == commonElement);
-        if length(idx)>1
-            lst_idx_row(1,:)=idx;
-        else
-            lst_idx_row(end+1)=idx;
-        end
+        % if length(idx)>1
+        %     lst_idx_row(1,:)=idx;
+        % else
+        lst_idx_row(end+1)=idx;
+        % end
     end
     lst_idx_matrix_dwi_spaces(row,:)=lst_idx_row;
 end
@@ -959,7 +1210,7 @@ end
 %Secondly, select common indices
 %apply this both to the median values and labels
 medians_dwi_subjs_final_spaces=[];
-for row = 1:length(medians_dwi_subjs_final(:,1))
+for row = 1:n_subjs
     medians_dwi_subjs_row=medians_dwi_subjs_final(row,:);
     lst_idx = lst_idx_matrix_dwi_spaces(row,:);
     medians_dwi_subjs_row_final=medians_dwi_subjs_row(lst_idx);
@@ -967,40 +1218,40 @@ for row = 1:length(medians_dwi_subjs_final(:,1))
 end
 
 labels_dwi_subjs_final_spaces=[];
-for row = 1:length(labels_dwi_subjs_final(:,1))
+for row = 1:n_subjs
     labels_dwi_subjs_row=labels_dwi_subjs_final(row,:);
     lst_idx = lst_idx_matrix_dwi_spaces(row,:);
     labels_dwi_subjs_row_final=labels_dwi_subjs_row(lst_idx);
     labels_dwi_subjs_final_spaces(row,:)=labels_dwi_subjs_row_final;
 end
 
-V_pve_0_dwi_median_subjs_final_spaces=[];
-for row = 1:length(V_pve_0_dwi_median_subjs_final(:,1))
-    V_pve_0_dwi_median_subjs_row=V_pve_0_dwi_median_subjs_final(row,:);
+V_pve_0_dwi_mean_subjs_final_spaces=[];
+for row = 1:n_subjs
+    V_pve_0_dwi_mean_subjs_row=V_pve_0_dwi_mean_subjs_final(row,:);
     lst_idx = lst_idx_matrix_dwi_spaces(row,:);
-    V_pve_0_dwi_median_subjs_row_final=V_pve_0_dwi_median_subjs_row(lst_idx);
-    V_pve_0_dwi_median_subjs_final_spaces(row,:)=V_pve_0_dwi_median_subjs_row_final;
+    V_pve_0_dwi_mean_subjs_row_final=V_pve_0_dwi_mean_subjs_row(lst_idx);
+    V_pve_0_dwi_mean_subjs_final_spaces(row,:)=V_pve_0_dwi_mean_subjs_row_final;
 end
 
-V_pve_1_dwi_median_subjs_final_spaces=[];
-for row = 1:length(V_pve_1_dwi_median_subjs_final(:,1))
-    V_pve_1_dwi_median_subjs_row=V_pve_1_dwi_median_subjs_final(row,:);
+V_pve_1_dwi_mean_subjs_final_spaces=[];
+for row = 1:n_subjs
+    V_pve_1_dwi_mean_subjs_row=V_pve_1_dwi_mean_subjs_final(row,:);
     lst_idx = lst_idx_matrix_dwi_spaces(row,:);
-    V_pve_1_dwi_median_subjs_row_final=V_pve_1_dwi_median_subjs_row(lst_idx);
-    V_pve_1_dwi_median_subjs_final_spaces(row,:)=V_pve_1_dwi_median_subjs_row_final;
+    V_pve_1_dwi_mean_subjs_row_final=V_pve_1_dwi_mean_subjs_row(lst_idx);
+    V_pve_1_dwi_mean_subjs_final_spaces(row,:)=V_pve_1_dwi_mean_subjs_row_final;
 end
 
-V_pve_2_dwi_median_subjs_final_spaces=[];
-for row = 1:length(V_pve_2_dwi_median_subjs_final(:,1))
-    V_pve_2_dwi_median_subjs_row=V_pve_2_dwi_median_subjs_final(row,:);
+V_pve_2_dwi_mean_subjs_final_spaces=[];
+for row = 1:n_subjs
+    V_pve_2_dwi_mean_subjs_row=V_pve_2_dwi_mean_subjs_final(row,:);
     lst_idx = lst_idx_matrix_dwi_spaces(row,:);
-    V_pve_2_dwi_median_subjs_row_final=V_pve_2_dwi_median_subjs_row(lst_idx);
-    V_pve_2_dwi_median_subjs_final_spaces(row,:)=V_pve_2_dwi_median_subjs_row_final;
+    V_pve_2_dwi_mean_subjs_row_final=V_pve_2_dwi_mean_subjs_row(lst_idx);
+    V_pve_2_dwi_mean_subjs_final_spaces(row,:)=V_pve_2_dwi_mean_subjs_row_final;
 end
-
+%% if you have MSE
 if strcmp(micro_parameter,'Rsoma')    
     medians_mse_rsoma_subjs_final_spaces=[];
-    for row = 1:length(medians_mse_rsoma_subjs_final(:,1))
+    for row = 1:n_subjs
         medians_mse_rsoma_subjs_row=medians_mse_rsoma_subjs_final(row,:);
         lst_idx = lst_idx_matrix_dwi_spaces(row,:);
         medians_mse_rsoma_subjs_row_final=medians_mse_rsoma_subjs_row(lst_idx);
@@ -1008,29 +1259,29 @@ if strcmp(micro_parameter,'Rsoma')
     end
 else
     medians_mse_subjs_final_spaces=[];
-    for row = 1:length(medians_mse_subjs_final(:,1))
+    for row = 1:n_subjs
         medians_mse_subjs_row=medians_mse_subjs_final(row,:);
         lst_idx = lst_idx_matrix_dwi_spaces(row,:);
         medians_mse_subjs_row_final=medians_mse_subjs_row(lst_idx);
         medians_mse_subjs_final_spaces(row,:)=medians_mse_subjs_row_final;
     end
 end
-%In case you remove high MSE voxels
+%In case you remove high MSE regions
 if strcmp(micro_parameter,'rsoma')
-    percentage_removal_rsoma_subjs_final_spaces=[];
-    for row = 1:length(percentage_removal_rsoma_subjs_final(:,1))
-        percentage_removal_rsoma_subjs_row=percentage_removal_rsoma_subjs_final(row,:);
+    percentage_high_MSE_rsoma_subjs_final_spaces=[];
+    for row = 1:n_subjs
+        percentage_high_MSE_rsoma_subjs_row=percentage_high_MSE_rsoma_subjs_final(row,:);
         lst_idx = lst_idx_matrix_dwi_spaces(row,:);
-        percentage_removal_rsoma_subjs_row_final=percentage_removal_rsoma_subjs_row(lst_idx);
-        percentage_removal_rsoma_subjs_final_spaces(row,:)=percentage_removal_rsoma_subjs_row_final;
+        percentage_high_MSE_rsoma_subjs_row_final=percentage_high_MSE_rsoma_subjs_row(lst_idx);
+        percentage_high_MSE_rsoma_subjs_final_spaces(row,:)=percentage_high_MSE_rsoma_subjs_row_final;
     end
 else
-    percentage_removal_microparameter_subjs_final_spaces=[];
-    for row = 1:length(percentage_removal_microparameter_subjs_final(:,1))
-        percentage_removal_microparameter_subjs_row=percentage_removal_microparameter_subjs_final(row,:);
+    percentage_high_MSE_microparameter_subjs_final_spaces=[];
+    for row = 1:n_subjs
+        percentage_high_MSE_microparameter_subjs_row=percentage_high_MSE_microparameter_subjs_final(row,:);
         lst_idx = lst_idx_matrix_dwi_spaces(row,:);
-        percentage_removal_microparameter_subjs_row_final=percentage_removal_microparameter_subjs_row(lst_idx);
-        percentage_removal_microparameter_subjs_final_spaces(row,:)=percentage_removal_microparameter_subjs_row_final;
+        percentage_high_MSE_microparameter_subjs_row_final=percentage_high_MSE_microparameter_subjs_row(lst_idx);
+        percentage_high_MSE_microparameter_subjs_final_spaces(row,:)=percentage_high_MSE_microparameter_subjs_row_final;
     end
 end
 %% func space
@@ -1041,13 +1292,13 @@ lst_idx_matrix_func_spaces=[];
 for row = 1:length(labels_func_subjs_final(:,1))
     lst_idx_row=[];
     for i = 1:length(commonElements)
-        commonElement = commonElements(i);            
+        commonElement = commonElements(i);
         idx = find(labels_func_subjs_final(row,:) == commonElement);
-        if length(idx)>1
-            lst_idx_row(1,:)=idx;
-        else
-            lst_idx_row(end+1)=idx;
-        end
+        % if length(idx)>1
+        %     lst_idx_row(1,:)=idx;
+        % else
+        lst_idx_row(end+1)=idx;
+        % end
     end
     lst_idx_matrix_func_spaces(row,:)=lst_idx_row;
 end
@@ -1062,7 +1313,6 @@ for row = 1:length(medians_func_subjs_final(:,1))
     medians_func_subjs_final_spaces(row,:)=medians_func_subjs_row_final;
 end
 
-
 labels_func_subjs_final_spaces=[];
 for row = 1:length(labels_func_subjs_final(:,1))
     labels_func_subjs_row=labels_func_subjs_final(row,:);
@@ -1071,46 +1321,46 @@ for row = 1:length(labels_func_subjs_final(:,1))
     labels_func_subjs_final_spaces(row,:)=labels_func_subjs_row_final;
 end
 
-V_pve_0_func_median_subjs_final_spaces=[];
-for row = 1:length(V_pve_0_func_median_subjs_final(:,1))
-    V_pve_0_func_median_subjs_row=V_pve_0_func_median_subjs_final(row,:);
+V_pve_0_func_mean_subjs_final_spaces=[];
+for row = 1:length(V_pve_0_func_mean_subjs_final(:,1))
+    V_pve_0_func_mean_subjs_row=V_pve_0_func_mean_subjs_final(row,:);
     lst_idx = lst_idx_matrix_func_spaces(row,:);
-    V_pve_0_func_median_subjs_row_final=V_pve_0_func_median_subjs_row(lst_idx);
-    V_pve_0_func_median_subjs_final_spaces(row,:)=V_pve_0_func_median_subjs_row_final;
+    V_pve_0_func_mean_subjs_row_final=V_pve_0_func_mean_subjs_row(lst_idx);
+    V_pve_0_func_mean_subjs_final_spaces(row,:)=V_pve_0_func_mean_subjs_row_final;
 end
 
-V_pve_1_func_median_subjs_final_spaces=[];
-for row = 1:length(V_pve_1_func_median_subjs_final(:,1))
-    V_pve_1_func_median_subjs_row=V_pve_1_func_median_subjs_final(row,:);
+V_pve_1_func_mean_subjs_final_spaces=[];
+for row = 1:length(V_pve_1_func_mean_subjs_final(:,1))
+    V_pve_1_func_mean_subjs_row=V_pve_1_func_mean_subjs_final(row,:);
     lst_idx = lst_idx_matrix_func_spaces(row,:);
-    V_pve_1_func_median_subjs_row_final=V_pve_1_func_median_subjs_row(lst_idx);
-    V_pve_1_func_median_subjs_final_spaces(row,:)=V_pve_1_func_median_subjs_row_final;
+    V_pve_1_func_mean_subjs_row_final=V_pve_1_func_mean_subjs_row(lst_idx);
+    V_pve_1_func_mean_subjs_final_spaces(row,:)=V_pve_1_func_mean_subjs_row_final;
 end
 
-V_pve_2_func_median_subjs_final_spaces=[];
-for row = 1:length(V_pve_2_func_median_subjs_final(:,1))
-    V_pve_2_func_median_subjs_row=V_pve_2_func_median_subjs_final(row,:);
+V_pve_2_func_mean_subjs_final_spaces=[];
+for row = 1:length(V_pve_2_func_mean_subjs_final(:,1))
+    V_pve_2_func_mean_subjs_row=V_pve_2_func_mean_subjs_final(row,:);
     lst_idx = lst_idx_matrix_func_spaces(row,:);
-    V_pve_2_func_median_subjs_row_final=V_pve_2_func_median_subjs_row(lst_idx);
-    V_pve_2_func_median_subjs_final_spaces(row,:)=V_pve_2_func_median_subjs_row_final;
+    V_pve_2_func_mean_subjs_row_final=V_pve_2_func_mean_subjs_row(lst_idx);
+    V_pve_2_func_mean_subjs_final_spaces(row,:)=V_pve_2_func_mean_subjs_row_final;
 end
 
 %percentage of zeros in the different regions of different subjects
-percentage_removal_func_subjs_final_spaces=[];
-for row = 1:length(percentage_removal_func_subjs_final(:,1))
-    percentage_removal_func_subjs_row=percentage_removal_func_subjs_final(row,:);
+percentage_zeros_CMRO2_subjs_final_spaces=[];
+for row = 1:length(percentage_zeros_CMRO2_subjs_final(:,1))
+    percentage_zeros_CMRO2_subjs_row=percentage_zeros_CMRO2_subjs_final(row,:);
     lst_idx = lst_idx_matrix_func_spaces(row,:);
-    percentage_removal_func_subjs_row_final=percentage_removal_func_subjs_row(lst_idx);
-    percentage_removal_func_subjs_final_spaces(row,:)=percentage_removal_func_subjs_row_final;
+    percentage_zeros_CMRO2_subjs_row_final=percentage_zeros_CMRO2_subjs_row(lst_idx);
+    percentage_zeros_CMRO2_subjs_final_spaces(row,:)=percentage_zeros_CMRO2_subjs_row_final;
 end
 
 %percentage of nans in the different regions of different subjects
-percentage_nans_func_subjs_final_spaces=[];
-for row = 1:length(percentage_nans_func_subjs_final(:,1))
-    percentage_nans_func_subjs_row=percentage_nans_func_subjs_final(row,:);
+percentage_nans_CMRO2_subjs_final_spaces=[];
+for row = 1:length(percentage_nans_CMRO2_subjs_final(:,1))
+    percentage_nans_CMRO2_subjs_row=percentage_nans_CMRO2_subjs_final(row,:);
     lst_idx = lst_idx_matrix_func_spaces(row,:);
-    percentage_nans_func_subjs_row_final=percentage_nans_func_subjs_row(lst_idx);
-    percentage_nans_func_subjs_final_spaces(row,:)=percentage_nans_func_subjs_row_final;
+    percentage_nans_CMRO2_subjs_row_final=percentage_nans_CMRO2_subjs_row(lst_idx);
+    percentage_nans_CMRO2_subjs_final_spaces(row,:)=percentage_nans_CMRO2_subjs_row_final;
 end
 
 %% informal testing
@@ -1131,10 +1381,11 @@ end
 percentage=0.5;
 n_subjects_tot=[];
 for region = 1:length(labels_func_subjs_final_spaces(1,:))
-    n_subjects = numel(find(percentage_nans_func_subjs_final_spaces(:,region)>percentage))/n_subjs;
+    n_subjects = numel(find(percentage_nans_CMRO2_subjs_final_spaces(:,region)>percentage))/n_subjs;
     n_subjects_tot(end+1)=n_subjects;
 end
 
+%%barplot
 % figure, bar(n_subjects_tot);
 % xlabel('Region');
 % ylabel('Number of subjects ratio')
@@ -1144,33 +1395,60 @@ end
 nans_threshold=0.5;
 regions_idx=find(n_subjects_tot>nans_threshold);
 
+%% You can run only this if don't want to remove anything
 medians_func = medians_func_subjs_final_spaces;
 medians_dwi = medians_dwi_subjs_final_spaces;
-medians_mse = medians_mse_rsoma_subjs_final_spaces;
 
-medians_pve_0_func = V_pve_0_func_median_subjs_final_spaces;
-medians_pve_1_func = V_pve_1_func_median_subjs_final_spaces;
-medians_pve_2_func = V_pve_2_func_median_subjs_final_spaces;
+if strcmp(micro_parameter,'Rsoma')
+    if strcmp(mse_threshold,'yes')
+        medians_mse = medians_mse_rsoma_subjs_final_spaces;
+    end
+    labels_final_rsoma=labels_func_subjs_final_spaces(1,:);
+elseif strcmp(micro_parameter,'fsoma')
+    if strcmp(mse_threshold,'yes')
+        medians_mse = medians_mse_subjs_final_spaces;
+    end
+    labels_final_fsoma=labels_func_subjs_final_spaces(1,:);
+elseif strcmp(micro_parameter,'fsup')
+    if strcmp(mse_threshold,'yes')
+        medians_mse = medians_mse_subjs_final_spaces;
+    end
+    labels_final_fsup=labels_func_subjs_final_spaces(1,:);
+elseif strcmp(micro_parameter,'fc')
+    if strcmp(mse_threshold,'yes')
+        medians_mse = medians_mse_subjs_final_spaces;
+    end
+    labels_final_fc=labels_func_subjs_final_spaces(1,:);
+end
 
-medians_pve_0_dwi = V_pve_0_dwi_median_subjs_final_spaces;
-medians_pve_1_dwi = V_pve_1_dwi_median_subjs_final_spaces;
-medians_pve_2_dwi = V_pve_2_dwi_median_subjs_final_spaces;
+means_pve_0_func = V_pve_0_func_mean_subjs_final_spaces;
+means_pve_1_func = V_pve_1_func_mean_subjs_final_spaces;
+means_pve_2_func = V_pve_2_func_mean_subjs_final_spaces;
+
+means_pve_0_dwi = V_pve_0_dwi_mean_subjs_final_spaces;
+means_pve_1_dwi = V_pve_1_dwi_mean_subjs_final_spaces;
+means_pve_2_dwi = V_pve_2_dwi_mean_subjs_final_spaces;
+
+labels_final=labels_func_subjs_final_spaces(1,:);
+%%
 
 medians_func(:,regions_idx)=[];
 medians_dwi(:,regions_idx)=[];
-medians_mse(:,regions_idx)=[];
+if strcmp(mse_threshold,'yes')
+    medians_mse(:,regions_idx)=[];
+end
 
-medians_pve_0_func(:,regions_idx)=[];
-medians_pve_1_func(:,regions_idx)=[];
-medians_pve_2_func(:,regions_idx)=[];
+means_pve_0_func(:,regions_idx)=[];
+means_pve_1_func(:,regions_idx)=[];
+means_pve_2_func(:,regions_idx)=[];
 
-medians_pve_0_dwi(:,regions_idx)=[];
-medians_pve_1_dwi(:,regions_idx)=[];
-medians_pve_2_dwi(:,regions_idx)=[];
+means_pve_0_dwi(:,regions_idx)=[];
+means_pve_1_dwi(:,regions_idx)=[];
+means_pve_2_dwi(:,regions_idx)=[];
 
 
 
-labels_final=labels_func_subjs_final_spaces(1,:);
+
 labels_final(regions_idx)=[];
 disp('Regions with high number of NaNs successfully removed');
 
@@ -1225,27 +1503,64 @@ end
 
 medians_energy_vec = nanmedian(medians_func,1);
 SE_energy = nanstd(medians_func,0,1)/sqrt(n_subjs);
+if strcmp(micro_parameter,'Rsoma')
+    medians_micro_parameter_vec_rsoma = nanmedian(medians_dwi,1);
+elseif strcmp(micro_parameter,'fsoma')
+    medians_micro_parameter_vec_fsoma = nanmedian(medians_dwi,1);
+elseif strcmp(micro_parameter,'fsup')
+    medians_micro_parameter_vec_fsup = nanmedian(medians_dwi,1);
+elseif strcmp(micro_parameter,'fc')
+    medians_micro_parameter_vec_fc = nanmedian(medians_dwi,1);
+end
+
 medians_micro_parameter_vec = nanmedian(medians_dwi,1);
 SE_micro_parameter = nanstd(medians_dwi,0,1)/sqrt(n_subjs);
-medians_mse = nanmedian(medians_mse,1);
+if strcmp(mse_threshold,'yes')
+    medians_mse = nanmedian(medians_mse,1);
+end
 
 cv_micro_parameter = SE_micro_parameter./medians_micro_parameter_vec;
-medians_pve_0_dwi_vec = nanmedian(medians_pve_0_dwi,1);
-SE_pve_0_dwi = nanstd(medians_pve_0_dwi_vec,0,1)/sqrt(n_subjs);
-medians_pve_1_dwi_vec = nanmedian(medians_pve_1_dwi,1);
-SE_pve_1_dwi = nanstd(medians_pve_1_dwi_vec,0,1)/sqrt(n_subjs);
-medians_pve_2_dwi_vec = nanmedian(medians_pve_2_dwi,1);
-SE_pve_2_dwi = nanstd(medians_pve_2_dwi_vec,0,1)/sqrt(n_subjs);
 
-medians_pve_0_func_vec = nanmedian(medians_pve_0_func,1);
-SE_pve_0_func = nanstd(medians_pve_0_func_vec,0,1)/sqrt(n_subjs);
-medians_pve_1_func_vec = nanmedian(medians_pve_1_func,1);
-SE_pve_1_func = nanstd(medians_pve_1_func_vec,0,1)/sqrt(n_subjs);
-medians_pve_2_func_vec = nanmedian(medians_pve_2_func,1);
-SE_pve_2_func = nanstd(medians_pve_2_func_vec,0,1)/sqrt(n_subjs);
+means_pve_0_dwi_vec = nanmedian(means_pve_0_dwi,1);
+SE_pve_0_dwi = nanstd(means_pve_0_dwi_vec,0,1)/sqrt(n_subjs);
+means_pve_1_dwi_vec = nanmedian(means_pve_1_dwi,1);
+SE_pve_1_dwi = nanstd(means_pve_1_dwi_vec,0,1)/sqrt(n_subjs);
+means_pve_2_dwi_vec = nanmedian(means_pve_2_dwi,1);
+SE_pve_2_dwi = nanstd(means_pve_2_dwi_vec,0,1)/sqrt(n_subjs);
+
+means_pve_0_func_vec = nanmedian(means_pve_0_func,1);
+SE_pve_0_func = nanstd(means_pve_0_func_vec,0,1)/sqrt(n_subjs);
+means_pve_1_func_vec = nanmedian(means_pve_1_func,1);
+SE_pve_1_func = nanstd(means_pve_1_func_vec,0,1)/sqrt(n_subjs);
+means_pve_2_func_vec = nanmedian(means_pve_2_func,1);
+SE_pve_2_func = nanstd(means_pve_2_func_vec,0,1)/sqrt(n_subjs);
 
 %% save matrices for threshold value analysis
-if pve_0_threshold_dwi==0.6
+if pve_0_threshold_dwi==0
+    medians_energy_vec_thr00=medians_energy_vec;
+    medians_micro_parameter_vec_thr00=medians_micro_parameter_vec;
+    labels_final_thr00=labels_final;
+elseif pve_0_threshold_dwi==0.1
+    medians_energy_vec_thr01=medians_energy_vec;
+    medians_micro_parameter_vec_thr01=medians_micro_parameter_vec;
+    labels_final_thr01=labels_final;
+elseif pve_0_threshold_dwi==0.2
+    medians_energy_vec_thr02=medians_energy_vec;
+    medians_micro_parameter_vec_thr02=medians_micro_parameter_vec;
+    labels_final_thr02=labels_final;
+elseif pve_0_threshold_dwi==0.3
+    medians_energy_vec_thr03=medians_energy_vec;
+    medians_micro_parameter_vec_thr03=medians_micro_parameter_vec;
+    labels_final_thr03=labels_final;
+elseif pve_0_threshold_dwi==0.4
+    medians_energy_vec_thr04=medians_energy_vec;
+    medians_micro_parameter_vec_thr04=medians_micro_parameter_vec;
+    labels_final_thr04=labels_final;
+elseif pve_0_threshold_dwi==0.5
+    medians_energy_vec_thr05=medians_energy_vec;
+    medians_micro_parameter_vec_thr05=medians_micro_parameter_vec;
+    labels_final_thr05=labels_final;
+elseif pve_0_threshold_dwi==0.6
     medians_energy_vec_thr06=medians_energy_vec;
     medians_micro_parameter_vec_thr06=medians_micro_parameter_vec;
     labels_final_thr06=labels_final;
@@ -1261,6 +1576,10 @@ elseif pve_0_threshold_dwi==0.9
     medians_energy_vec_thr09=medians_energy_vec;
     medians_micro_parameter_vec_thr09=medians_micro_parameter_vec;
     labels_final_thr09=labels_final;
+elseif pve_0_threshold_dwi==1
+    medians_energy_vec_onlyGM=medians_energy_vec;
+    medians_micro_parameter_vec_onlyGM=medians_micro_parameter_vec;
+    labels_final_onlyGM=labels_final;
 end
 
 %%
@@ -1355,24 +1674,26 @@ else
     unit_of_measure_energy='(ml/100g/min)';
 end
 
-%% Run if you to remove outliers identified by eyes
-rsoma_limit=11.1;
+%% Run if you want to remove outliers identified by eyes
+rsoma_limit=11.1;%11.1
 idx_outlier=find(medians_micro_parameter_vec<rsoma_limit);
-% energy_limit=240;
+% energy_limit=160;
 % idx_outlier=find(medians_energy_vec>energy_limit);
+
+labels_low_rsoma = labels_final(idx_outlier);
 
 medians_energy_vec(idx_outlier)=[];
 medians_micro_parameter_vec(idx_outlier)=[];
 SE_energy(idx_outlier)=[];
 SE_micro_parameter(idx_outlier)=[];
 
-medians_pve_0_dwi_vec(idx_outlier)=[];
-medians_pve_1_dwi_vec(idx_outlier)=[];
-medians_pve_2_dwi_vec(idx_outlier)=[];
+means_pve_0_dwi_vec(idx_outlier)=[];
+means_pve_1_dwi_vec(idx_outlier)=[];
+means_pve_2_dwi_vec(idx_outlier)=[];
 
-medians_pve_0_func_vec(idx_outlier)=[];
-medians_pve_1_func_vec(idx_outlier)=[];
-medians_pve_2_func_vec(idx_outlier)=[];
+means_pve_0_func_vec(idx_outlier)=[];
+means_pve_1_func_vec(idx_outlier)=[];
+means_pve_2_func_vec(idx_outlier)=[];
 
 SE_pve_0_func(idx_outlier)=[];
 SE_pve_1_func(idx_outlier)=[];
@@ -1381,29 +1702,51 @@ SE_pve_2_func(idx_outlier)=[];
 SE_pve_0_dwi(idx_outlier)=[];
 SE_pve_1_dwi(idx_outlier)=[];
 SE_pve_2_dwi(idx_outlier)=[];
+
+labels_final(idx_outlier)=[];
+
+
 % %find which are low rsoma regions
 % disp(strcat('Lower rsoma labels are:',num2str(labels_final(idx_outlier))))
 % numel(idx_outlier)
 % find(labels_final==46)
+
+%% remove regional micro_parameter regions corresponding to low rsoma labels 
+
+idx_outlier = [];
+for i=1:length(labels_low_rsoma)
+    idx = find(labels_final==labels_low_rsoma(i));
+    idx_outlier(end+1)=idx;
+end
+
+medians_energy_vec(idx_outlier)=[];
+medians_micro_parameter_vec(idx_outlier)=[];
+SE_energy(idx_outlier)=[];
+SE_micro_parameter(idx_outlier)=[];
+
+
 %%
 [r,p]=corrcoef(medians_energy_vec,medians_micro_parameter_vec,'rows','complete');%0.37%p0.0029
 %try other kind of correlation
 corr_coef_str=num2str(round(r(2),2));
 
-% remove nan microstructural regions
+%% remove nan 
+
+% microstructural regions
+
 idx = find(isnan(medians_micro_parameter_vec))
 medians_energy_vec(idx)=[];
 medians_micro_parameter_vec(idx)=[];
 SE_energy(idx)=[];
 SE_micro_parameter(idx)=[];
 
-medians_pve_0_dwi_vec(idx)=[];
-medians_pve_1_dwi_vec(idx)=[];
-medians_pve_2_dwi_vec(idx)=[];
+means_pve_0_dwi_vec(idx)=[];
+means_pve_1_dwi_vec(idx)=[];
+means_pve_2_dwi_vec(idx)=[];
 
-medians_pve_0_func_vec(idx)=[];
-medians_pve_1_func_vec(idx)=[];
-medians_pve_2_func_vec(idx)=[];
+means_pve_0_func_vec(idx)=[];
+means_pve_1_func_vec(idx)=[];
+means_pve_2_func_vec(idx)=[];
 
 SE_pve_0_func(idx)=[];
 SE_pve_1_func(idx)=[];
@@ -1413,20 +1756,23 @@ SE_pve_0_dwi(idx)=[];
 SE_pve_1_dwi(idx)=[];
 SE_pve_2_dwi(idx)=[];
 
-% 
+% energetic regions
+
 idx = find(isnan(medians_energy_vec))
 medians_energy_vec(idx)=[];
 medians_micro_parameter_vec(idx)=[];
 SE_energy(idx)=[];
 SE_micro_parameter(idx)=[];
 
-medians_pve_0_dwi_vec(idx)=[];
-medians_pve_1_dwi_vec(idx)=[];
-medians_pve_2_dwi_vec(idx)=[];
+%pve 
 
-medians_pve_0_func_vec(idx)=[];
-medians_pve_1_func_vec(idx)=[];
-medians_pve_2_func_vec(idx)=[];
+means_pve_0_dwi_vec(idx)=[];
+means_pve_1_dwi_vec(idx)=[];
+means_pve_2_dwi_vec(idx)=[];
+
+means_pve_0_func_vec(idx)=[];
+means_pve_1_func_vec(idx)=[];
+means_pve_2_func_vec(idx)=[];
 
 SE_pve_0_func(idx)=[];
 SE_pve_1_func(idx)=[];
@@ -1436,10 +1782,12 @@ SE_pve_0_dwi(idx)=[];
 SE_pve_1_dwi(idx)=[];
 SE_pve_2_dwi(idx)=[];
 
+%% fit
+
 y=medians_energy_vec;
 x=medians_micro_parameter_vec;
 % Fit a quadratic equation
-pol = polyfit(x, y, 2);
+pol = polyfit(x, y, 1);
 % Evaluate the fitted polynomial
 y_fit = polyval(pol, x);
 % Calculate the R-squared value
@@ -1450,17 +1798,17 @@ Rsquared
 y_fit=y_fit';
 y_fit_sorted = y_fit(index);
 
-x=x';
-y=y';
-tbl=table(x,y,'VariableNames',{'Rsoma','CMRO2'});
-fitlm(tbl,'CMRO2~Rsoma^2','RobustOpts','on')
+% x=x';
+% y=y';
+% tbl=table(x,y,'VariableNames',{'Rsoma','CMRO2'});
+% fitlm(tbl,'CMRO2~Rsoma^2','RobustOpts','on')
 %%
 %medians_micro_parameter_vec(equal_labels_idx)=
 %%
 figure, 
 s = errorbar(medians_micro_parameter_vec, medians_energy_vec, SE_energy, SE_energy, SE_micro_parameter, SE_micro_parameter,'o');
-hold on
-plot(x_sorted,y_fit_sorted,'--','LineWidth',3,'Color',"#000000");
+% hold on
+% plot(x_sorted,y_fit_sorted,'--','LineWidth',3,'Color',"#000000");
 % diff=setdiff(medians_micro_parameter_vec_ALLpves,medians_micro_parameter_vec_GMpves);
 % idx_diff=find(medians_micro_parameter_vec==diff(1));
 % hold on
@@ -1482,7 +1830,7 @@ s.MarkerFaceColor = [0 0.5 0.5];
 % elseif p(2)>0.05
 %         txt = {strcat('r = ',corr_coef_str,'')};
 % end
-% text(60,12,txt,'FontWeight', 'Bold');
+% text(5*10^4,100,txt,'FontWeight', 'Bold');
 % annotation('textbox',[.6,.2,.30,.13], 'String', txt, 'FontWeight', 'Bold','FontSize',15);
 % if strcmp(energy_parameter,'CBF') && strcmp(micro_parameter,'Rsoma')
 %     text(13.8,60,txt, 'FontWeight', 'bold','FontSize',12);
@@ -1507,17 +1855,28 @@ s.MarkerFaceColor = [0 0.5 0.5];
 set(get(gca, 'XAxis'), 'FontWeight', 'bold');
 set(get(gca, 'YAxis'), 'FontWeight', 'bold');
 set(gca,'box','off')
-x0=400;
-y0=400;
+x0=50;
+y0=50;
 width=550;
 height=450;
 set(gcf,'position',[x0,y0,width,height]);
 grid on
 
+%% to save content variables
+if strcmp(micro_parameter,'Rsoma')
+    medians_rsoma = medians_micro_parameter_vec;
+elseif strcmp(micro_parameter,'fsup')
+    medians_fsup = medians_micro_parameter_vec;
+elseif strcmp(micro_parameter,'fc')
+    medians_fc = medians_micro_parameter_vec;
+elseif strcmp(micro_parameter,'fsoma')
+    medians_fsoma = medians_micro_parameter_vec;
+end
+
 %% check relationship between parameters and PVE medians
 
 %select parameters
-pve_tissue = 'CSF';
+pve_tissue = 'GM';
 parameter = 'func';
 
 %select data
@@ -1525,40 +1884,42 @@ if strcmp(parameter,'dwi')
     medians_parameter = medians_micro_parameter_vec;
     SE_parameter = SE_micro_parameter;
     if strcmp(pve_tissue,'CSF')
-        medians_pve = medians_pve_0_dwi_vec;
+        means_pve = means_pve_0_dwi_vec;
         SE_pve = SE_pve_0_dwi;
     elseif strcmp(pve_tissue,'WM')
-        medians_pve = medians_pve_2_dwi_vec;
+        means_pve = means_pve_2_dwi_vec;
         SE_pve = SE_pve_2_dwi;
     elseif strcmp(pve_tissue,'GM')
-        medians_pve = medians_pve_1_dwi_vec;
+        means_pve = means_pve_1_dwi_vec;
         SE_pve = SE_pve_1_dwi;
     end
 elseif strcmp(parameter,'func')
     medians_parameter = medians_energy_vec;
     SE_parameter = SE_energy;
     if strcmp(pve_tissue,'CSF')
-        medians_pve = medians_pve_0_func_vec;
+        means_pve = means_pve_0_func_vec;
         SE_pve = SE_pve_0_func;
     elseif strcmp(pve_tissue,'WM')
-        medians_pve = medians_pve_2_func_vec;
+        means_pve = means_pve_2_func_vec;
         SE_pve = SE_pve_2_func;
     elseif strcmp(pve_tissue,'GM')
-        medians_pve = medians_pve_1_func_vec;
+        means_pve = means_pve_1_func_vec;
         SE_pve = SE_pve_1_func;
         
     end
 end
 
 
-
-[r,p]=corrcoef(medians_parameter,medians_pve,'rows','complete');
-%try other kind of correlation
+% 
+[r,p]=corrcoef(medians_parameter,means_pve,'rows','complete');
 corr_coef_str=num2str(round(r(2),2));
+
+tbl = table(medians_parameter', means_pve','VariableNames',{'parameter','pve'});
+fitlm(tbl,'parameter~pve','RobustOpts','on')
 
 %plot (manually select y label)
 figure, 
-s = errorbar(medians_pve, medians_parameter, SE_parameter, SE_parameter, SE_pve, SE_pve,'o');
+s = errorbar(means_pve, medians_parameter, SE_parameter, SE_parameter, SE_pve, SE_pve,'o');
 % hold on
 % plot(x_sorted,y_fit_sorted,'--','LineWidth',3,'Color',"#000000");
 xlabel(strcat(pve_tissue,'pve'),'FontSize',15,'FontWeight','bold');
@@ -1621,21 +1982,25 @@ grid on
 % medians_pve_0_dwi_scored = zscore(medians_pve_0_dwi_vec);
 % medians_pve_2_dwi_scored = zscore(medians_pve_2_dwi_vec);
 % medians_energy_dwi_scored = zscore(medians_energy_vec);
-
+%medians_micro_parameter_vec = medians_fc;
 medians_dwi_scored = nanzscore(medians_micro_parameter_vec);
-medians_pve_0_dwi_scored = nanzscore(medians_pve_0_dwi_vec);
-medians_pve_2_dwi_scored = nanzscore(medians_pve_2_dwi_vec);
+means_pve_0_dwi_scored = nanzscore(means_pve_0_dwi_vec);
+means_pve_1_dwi_scored = nanzscore(means_pve_1_dwi_vec);
+means_pve_2_dwi_scored = nanzscore(means_pve_2_dwi_vec);
 medians_energy_scored = nanzscore(medians_energy_vec);
-medians_pve_0_func_scored = nanzscore(medians_pve_0_func_vec);
-medians_pve_2_func_scored = nanzscore(medians_pve_2_func_vec);
+means_pve_0_func_scored = nanzscore(means_pve_0_func_vec);
+means_pve_1_func_scored = nanzscore(means_pve_1_func_vec);
+means_pve_2_func_scored = nanzscore(means_pve_2_func_vec);
 %medians_mse_scored = nanzscore(medians_mse);
 
 medians_dwi_scored_tr = medians_dwi_scored';
-medians_pve_0_dwi_scored_tr = medians_pve_0_dwi_scored';
-medians_pve_2_dwi_scored_tr = medians_pve_2_dwi_scored';
+means_pve_0_dwi_scored_tr = means_pve_0_dwi_scored';
+means_pve_1_dwi_scored_tr = means_pve_1_dwi_scored';
+means_pve_2_dwi_scored_tr = means_pve_2_dwi_scored';
 medians_energy_scored_tr = medians_energy_scored';
-medians_pve_0_func_scored_tr = medians_pve_0_func_scored';
-medians_pve_2_func_scored_tr = medians_pve_2_func_scored';
+means_pve_0_func_scored_tr = means_pve_0_func_scored';
+means_pve_1_func_scored_tr = means_pve_1_func_scored';
+means_pve_2_func_scored_tr = means_pve_2_func_scored';
 %medians_mse_scored_tr = medians_mse_scored';
 
 % %consider both dwi and func PVE medians as covariates
@@ -1648,14 +2013,78 @@ medians_pve_2_func_scored_tr = medians_pve_2_func_scored';
 % y=y';
 % fitlm(X,y,'RobustOpts','on')
 
-tbl=table(medians_energy_scored_tr,medians_dwi_scored_tr,medians_pve_0_dwi_scored_tr,medians_pve_2_dwi_scored_tr,medians_pve_0_func_scored_tr,medians_pve_2_func_scored_tr, 'VariableNames', ...
-    {'CMRO2','Rsoma','pve_0_dwi','pve_2_dwi','pve_0_func','pve_2_func'});
+tbl=table(medians_energy_scored_tr,medians_dwi_scored_tr,means_pve_0_dwi_scored_tr,means_pve_1_dwi_scored_tr,means_pve_2_dwi_scored_tr,means_pve_0_func_scored_tr,means_pve_1_func_scored_tr,means_pve_2_func_scored_tr, 'VariableNames', ...
+    {'CMRO2','fc','pve_0_dwi','pve_1_dwi','pve_2_dwi','pve_0_func','pve_1_func','pve_2_func'});
 %build your model
-% mdl=fitlm(tbl,'CMRO2 ~ Rsoma^2+pve_0_dwi+pve_2_dwi+pve_0_func+pve_2_func','RobustOpts','on')
-mdl=fitlm(tbl,'CMRO2 ~ Rsoma^2','RobustOpts','off')
-% mdl=fitlm(tbl,'CMRO2 ~ Rsoma^2','RobustOpts','off')
+mdl=fitlm(tbl,'CMRO2 ~ fc + pve_0_dwi + pve_2_dwi','RobustOpts','on')
+% mdl=fitlm(tbl,'CMRO2 ~ fc','RobustOpts','off')
+
+%% covaried out covariates
+
+%betas
+estimate_pve_0 = 0.54656; 
+estimate_pve_2 = 0.54108;
+
+%regress out
+y_pve_0_dwi = means_pve_0_dwi_scored_tr.*estimate_pve_0;
+y_pve_2_dwi = means_pve_2_dwi_scored_tr.*estimate_pve_2;
+cmro2_regressed = medians_energy_scored_tr-y_pve_0_dwi-y_pve_2_dwi;
+
+y=cmro2_regressed';
+x=medians_micro_parameter_vec;
+% Fit a quadratic equation
+pol = polyfit(x, y, 1);
+% Evaluate the fitted polynomial
+y_fit = polyval(pol, x);
+% Calculate the R-squared value
+Rsquared = 1 - sum((y - y_fit).^2) / sum((y - nanmean(y)).^2);
+Rsquared
+
+[x_sorted,index] = sortrows(x');
+y_fit=y_fit';
+y_fit_sorted = y_fit(index);
+
+
+
+figure, 
+p=plot(medians_micro_parameter_vec,cmro2_regressed,'.',MarkerSize=25);
+hold on
+plot(x_sorted,y_fit_sorted,'--','LineWidth',3,'Color',"#000000");
+xlabel(strcat(micro_parameter,unit_of_measure_dwi),'FontSize',15,'FontWeight','bold');
+ylabel(strcat('Adjusted CMRO_2',unit_of_measure_energy),'FontSize',12,'FontWeight','bold');
+p.Color='b';
+set(get(gca, 'XAxis'), 'FontWeight', 'bold');
+set(get(gca, 'YAxis'), 'FontWeight', 'bold');
+set(gca,'box','off')
+x0=50;
+y0=50;
+width=550;
+height=450;
+set(gcf,'position',[x0,y0,width,height]);
+grid on
+
+%you can't have error bars because you can't know how to regress out for
+%each subject.
+%%
+
+X = cat(2,medians_dwi_scored_tr,means_pve_0_dwi_scored_tr,means_pve_2_dwi_scored_tr);
+rsoma_squared = medians_dwi_scored_tr.^2;
+X_r2 = cat(2,rsoma_squared,means_pve_0_dwi_scored_tr,means_pve_2_dwi_scored_tr);
+mdl=fitlm(X_r2,medians_energy_scored_tr,'RobustOpts','off')
+
+
 %%I didn't remove NaN values but it shouldn't influence
 %figure, plot(mdl)
+
+%% check CMRO2 vs micro_parameter fitlm
+medians_dwi_scored = nanzscore(medians_micro_parameter_vec);
+medians_energy_scored = nanzscore(medians_energy_vec);
+medians_dwi_scored_tr = medians_dwi_scored';
+medians_energy_scored_tr = medians_energy_scored';
+
+tbl = table(medians_energy_scored_tr,medians_dwi_scored_tr,'VariableNames',{'CMRO2','fsup'});
+mdl=fitlm(tbl,'CMRO2 ~ fsup','RobustOpts','on')
+
 %%
 
 %consider both dwi PVE medians as covariates
@@ -1701,11 +2130,13 @@ medians_pve_0_func_vec_nonans(idx_nans)=[];
 [r,p]=corrcoef(medians_pve_0_dwi_vec_nonans,medians_pve_0_func_vec_nonans);
 
 %% check parameter diff trend
+%you have to launch the code for different values of threshold
+%save results: labels, CMRO2 and rsoma medians.
 
 %check if labels have equal order
 comparisons=[];
 for i = 1:length(labels_final_thr01)
-    elements=[labels_final_thr01(i),labels_final_thr02(i),labels_final_thr03(i),labels_final_thr05(i),labels_final_onlyGM(i),labels_final_thr06(i),labels_final_thr07(i),labels_final_thr08(i),labels_final_thr09(i)];
+    elements=[labels_final_thr0(i),labels_final_thr01(i),labels_final_thr02(i),labels_final_thr03(i),labels_final_thr05(i),labels_final_onlyGM(i),labels_final_thr06(i),labels_final_thr07(i),labels_final_thr08(i),labels_final_thr09(i),labels_final_thr04(i)];
     m = repmat(labels_final_thr01(i),1,length(elements));
     comparison = isequal(m, elements);
     comparisons(end+1)=comparison;
@@ -1713,25 +2144,25 @@ end
 %check
 sum(comparisons)==length(comparisons)
 
-%detect uncommon label which is present in threshold=0.4
-%and delete it
-uncommon_label=setdiff(labels_final_thr04,labels_final_thr05);
-
-idx_uncommon_label=find(labels_final_thr04==uncommon_label);
-
-labels_final_thr04_withoutuncommon=labels_final_thr04;
-medians_energy_vec_thr04_withoutuncommon=medians_energy_vec_thr04;
-medians_micro_parameter_vec_thr04_withoutuncommon = medians_micro_parameter_vec_thr04;
-
-labels_final_thr04_withoutuncommon(idx_uncommon_label)=[];
-medians_energy_vec_thr04_withoutuncommon(idx_uncommon_label)=[];
-medians_micro_parameter_vec_thr04_withoutuncommon(idx_uncommon_label)=[];
+% %detect uncommon label which is present in threshold=0.4
+% %and delete it
+% uncommon_label=setdiff(labels_final_thr04,labels_final_thr05);
+% 
+% idx_uncommon_label=find(labels_final_thr04==uncommon_label);
+% 
+% labels_final_thr04_withoutuncommon=labels_final_thr04;
+% medians_energy_vec_thr04_withoutuncommon=medians_energy_vec_thr04;
+% medians_micro_parameter_vec_thr04_withoutuncommon = medians_micro_parameter_vec_thr04;
+% 
+% labels_final_thr04_withoutuncommon(idx_uncommon_label)=[];
+% medians_energy_vec_thr04_withoutuncommon(idx_uncommon_label)=[];
+% medians_micro_parameter_vec_thr04_withoutuncommon(idx_uncommon_label)=[];
 
 %%
 %now you can calculate the mean of differences
 % diff05 = medians_micro_parameter_vec_thr05-medians_micro_parameter_vec_onlyGM;
 % mean_diff05 = abs(nanmean(diff05));
-medians_micros={medians_micro_parameter_vec_thr0,medians_micro_parameter_vec_thr01,medians_micro_parameter_vec_thr02,medians_micro_parameter_vec_thr03,medians_micro_parameter_vec_thr04_withoutuncommon,medians_micro_parameter_vec_thr05,medians_micro_parameter_vec_thr06,medians_micro_parameter_vec_thr07,medians_micro_parameter_vec_thr08,medians_micro_parameter_vec_thr09};
+medians_micros={medians_micro_parameter_vec_thr0,medians_micro_parameter_vec_thr01,medians_micro_parameter_vec_thr02,medians_micro_parameter_vec_thr03,medians_micro_parameter_vec_thr04,medians_micro_parameter_vec_thr05,medians_micro_parameter_vec_thr06,medians_micro_parameter_vec_thr07,medians_micro_parameter_vec_thr08,medians_micro_parameter_vec_thr09};
 mean_diffs_micros=[];
 for i=1:length(medians_micros)
 diff=medians_micros{i}-medians_micro_parameter_vec_onlyGM;
@@ -1744,7 +2175,7 @@ ylabel('mean(abs(diff))');
 xlabel('threshold value');
 title('Mean of absolute values of differences (Rsoma)');
 
-medians_energy={medians_energy_vec_thr0,medians_energy_vec_thr01,medians_energy_vec_thr02,medians_energy_vec_thr03,medians_energy_vec_thr04_withoutuncommon,medians_energy_vec_thr05,medians_energy_vec_thr06,medians_energy_vec_thr07,medians_energy_vec_thr08,medians_energy_vec_thr09};
+medians_energy={medians_energy_vec_thr0,medians_energy_vec_thr01,medians_energy_vec_thr02,medians_energy_vec_thr03,medians_energy_vec_thr04,medians_energy_vec_thr05,medians_energy_vec_thr06,medians_energy_vec_thr07,medians_energy_vec_thr08,medians_energy_vec_thr09};
 mean_diffs_energy=[];
 for i=1:length(medians_energy)
 diff=medians_energy{i}-medians_energy_vec_onlyGM;
@@ -1808,6 +2239,30 @@ pvalue_linearcoeff=numel(find(counter_coeffs_linear<0))/tot_iterations;
 tbl=table(nanzscore(medians_energy_vec'),nanzscore(medians_micro_parameter_vec'),'VariableNames',{'CMRO2','Rsoma'});
 total_mdl = fitlm(tbl,'CMRO2~Rsoma^2','RobustOpts','off');
 
+%% Check relationship between Rsoma and fsoma,fc
+
+[r,p]=corrcoef(medians_micro_parameter_vec_rsoma,medians_micro_parameter_vec_fc,'rows','complete')
+corr_coef_str=num2str(round(r(2),2));
+
+figure,
+s=plot(medians_micro_parameter_vec_rsoma,medians_micro_parameter_vec_fc,'o','MarkerSize',7);
+xlabel('Rsoma','FontSize',15,'FontWeight','bold');
+ylabel('fc','FontSize',15,'FontWeight','bold');
+%s.MarkerEdgeColor = [1,0.5,1];
+if p(2)<0.05 && p(2)>0.01    
+    txt = {strcat('r = ',corr_coef_str,'*')};
+elseif p(2)<0.01 && p(2)>0.001   
+    txt = {strcat('r = ',corr_coef_str,'**')};
+elseif p(2)<0.001
+    txt = {strcat('r = ',corr_coef_str,'***')};
+elseif p(2)>0.05
+        txt = {strcat('r = ',corr_coef_str,'')};
+end
+s.MarkerFaceColor = 'b';
+text(7,0.4,txt,'FontWeight', 'Bold');
+grid on
+%annotation('textbox',[.6,.2,.30,.13], 'String', txt, 'FontWeight', 'Bold','FontSize',15);
+
 %% across regions (for each subject)
 
 corr_for_each_subj = [];
@@ -1832,14 +2287,16 @@ s=histogram(corr_for_each_subj,'FaceAlpha',1,'BinWidth',0.07);
 s.FaceColor="b";
 xlabel('correlation coefficient, r','FontWeight','bold','FontSize',15);
 ylabel('Counts (# subjects)','FontWeight','bold','FontSize',15);
-ylim([0,16.5]);
+ylim([0,12]);
 xline(0,'--','LineWidth',3);
 if p<0.05 && p>0.01    
     txt = {strcat('\mu_r = ',mean_corr,'*')};
 elseif p<0.01 && p>0.001   
     txt = {strcat('\mu_r = ',mean_corr,'**')};
-else
+elseif p<0.001
     txt = {strcat('\mu_r = ',mean_corr,'***')};
+elseif p>0.05
+        txt = {strcat('\mu_r = ',mean_corr,'')};
 end
 
 title(strcat(energy_parameter, 'vs',micro_parameter));
@@ -1849,6 +2306,142 @@ grid on
 
 
 
+%% check correlation distribution 
+
+n_regions_final = numel(labels_final);
+
+z=[];
+pvalue=[];
+for i = 1:n_regions_final
+    [r,p] = corrcoef(medians_func(:,i), medians_dwi(:,i),'rows','complete');
+    z(end+1)=r(2);
+    pvalue(end+1)=p(2);
+end
+
+% distribution without thresholding
+% figure, hist(z);
+% xlabel('correlation, r');
+% ylabel('# regions');
+
+z_accepted=[];
+labels_accepted=[];
+pvalue_accepted=[];
+for i=1:numel(z)
+    if pvalue(i)<0.05
+        z_accepted(end+1)=z(i);
+        labels_accepted(end+1)=labels_final(i);
+        pvalue_accepted(end+1)=pvalue(i);
+    end
+end
+
+mean_regions_corr=nanmean(z_accepted);%why do we have NaNs?
+[h,p,ci,stats]=ttest(atanh(z_accepted));
+
+mean_corr=round(mean_regions_corr,2);
+mean_corr=num2str(mean_corr);
+
+figure, hist(z_accepted);
+xlabel('correlation coefficient, r','FontWeight','bold','FontSize',15);
+ylabel('# regions','FontWeight','bold','FontSize',15);
+ylim([0,8]);
+if p<0.05 && p>0.01    
+    txt = {strcat('\mu_r = ',mean_corr,'*')};
+elseif p<0.01 && p>0.001   
+    txt = {strcat('\mu_r = ',mean_corr,'**')};
+elseif p<0.001
+    txt = {strcat('\mu_r = ',mean_corr,'***')};
+elseif p>0.05
+        txt = {strcat('\mu_r = ',mean_corr,'')};
+end
+text(0.4,5,txt, 'FontWeight', 'bold','FontSize',15);
+grid on 
+
+%%
+corr_and_regions = [z_accepted;labels_accepted].';
+
+
+%% run this section if
+%you want to check where pos and neg corr regions are
+binary_z=[];
+for i=1:length(z_accepted)
+    if z_accepted(i)>0
+        binary_z(i)=1;
+    else
+        binary_z(i)=-1;
+    end
+end
+corr_and_regions = [binary_z;labels_accepted].';
+%%
+diff=setxor(labels_accepted,unique(V_atlas_tot));
+%
+V_atlas = V_atlas_tot;
+for ii = 1:length(V_atlas_tot(:))%lo fa per tutti i valori dell'immagine
+    if any(0==V_atlas_tot(ii))
+        V_atlas(ii)=0;
+    elseif any(diff==V_atlas_tot(ii))
+        V_atlas(ii)=0;
+    else
+        idx=find(corr_and_regions(:,2)==V_atlas_tot(ii));
+        %substitute the corresponding corr coefficient
+        corr=corr_and_regions(:,1);
+        V_atlas(ii)=corr(idx);
+    end
+end
+
+rgb = [ ...
+    94    79   162
+    50   136   189
+   102   194   165
+   171   221   164
+   230   245   152
+   255   255   191
+   254   224   139
+   253   174    97
+   244   109    67
+   213    62    79
+   158     1    66  ] / 255;
+
+b = repmat(linspace(0,1,200),20,1);
+
+%
+%plot only regions with significant p-values
+fig=figure;
+a=28:4:68;%12:4:72;
+for i = 1:length(a)
+    subplot(4,4,i)
+    imagesc(rot90(V_atlas(:,:,a(i))))%[0,8]
+    axis equal
+    axis off
+    caxis([-1,+1])
+end
+h=axes(fig,'visible','off');
+imshow(b,[],'InitialMagnification','fit')
+colormap(rgb)
+%colormap seismic
+colorbar(h,'orientation','horizontal','Location','SouthOutside','FontSize',12);
+sgtitle('Regional correlation map thresholded for p<0.05')
+caxis([-1,+1])
+
+%check for symmetry between positive and negative correlation.
+
+
+% Save maps
+V_corr_map=V_atlas;
+
+if strcmp(micro_parameter,'fsoma')
+    V_corr_CMRO2vsfsoma_map=V_corr_map;
+    labels_accepted_CMRO2vsfsoma_map=labels_accepted;
+    z_accepted_CMRO2vsfsoma_map=z_accepted;
+elseif strcmp(micro_parameter,'Rsoma')
+    V_corr_CMRO2vsrsoma_map=V_corr_map;
+    labels_accepted_CMRO2vsrsoma_map=labels_accepted;
+    z_accepted_CMRO2vsrsoma_map=z_accepted;
+elseif strcmp(micro_parameter,'fsup')
+    V_corr_CMRO2vsfsup_map=V_corr_map;
+    labels_accepted_CMRO2vsfsup_map=labels_accepted;
+    z_accepted_CMRO2vsfsup_map=z_accepted;
+end
 
 
 %% across subjs (GM median)
+
